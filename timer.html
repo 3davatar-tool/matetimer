@@ -196,7 +196,7 @@ button:active { transform: scale(0.95); }
                     timeLeft--;
                     
                     // 終了判定
-                    if (timeLeft <= 0) {
+if (timeLeft <= 0) {
                         clearInterval(timer); 
                         timer = null;
                         finishSound.play(); // 音を鳴らす
@@ -204,15 +204,20 @@ button:active { transform: scale(0.95); }
                         // 表情を笑顔にする
                         if (currentVrm && currentVrm.expressionManager) {
                             currentVrm.expressionManager.setValue('joy', 1.0);
-                            currentVrm.expressionManager.update();
+                            currentVrm.expressionManager.update(); // 表情マネージャーの更新
                         }
 
                         document.getElementById('status').textContent = "お疲れ様！";
                         document.getElementById('startBtn').textContent = "開始";
 
-                        // ポーズを止めたまま笑顔を維持
+                        // ポーズを止める
                         if (animationAction) {
                             animationAction.paused = true; 
+                        }
+
+                        // ★ここが重要：ポーズ停止後にアバター全体の見た目を1回だけ強制更新する
+                        if (currentVrm) {
+                            currentVrm.update(0); 
                         }
 
                         timeLeft = 25 * 60; // タイマーをリセット
@@ -244,6 +249,7 @@ button:active { transform: scale(0.95); }
 </body>
 
 </html>
+
 
 
 
