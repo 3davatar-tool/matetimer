@@ -7,7 +7,16 @@
     <title>mateTimer - Stable Version</title>
 <style>
 
-body { margin: 0; background: #0c0c0c; color: #00f2ff; font-family: sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+body {
+    margin: 0;
+    /* 背景画像の設定：フォルダ名 backimage/ を追加 */
+    background-image: url('backimage/back_image.png');
+    background-size: cover;      /* 画面全体に広げる */
+    background-position: center;  /* 中央に配置 */
+    background-repeat: no-repeat; /* 繰り返さない */
+    background-attachment: fixed; /* 背景を固定 */
+    overflow: hidden;
+}
 
 #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
 
@@ -155,4 +164,5 @@ const vrmaGltf = await loader.loadAsync(motionPath).catch(() => null);
 </body>
 
 </html>
+
 
