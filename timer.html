@@ -195,16 +195,16 @@ button:active { transform: scale(0.95); }
                 timer = setInterval(() => {
                     timeLeft--;
                     
-                    // 終了判定
-if (timeLeft <= 0) {
+// 終了判定
+                    if (timeLeft <= 0) {
                         clearInterval(timer); 
                         timer = null;
                         finishSound.play(); // 音を鳴らす
 
-                        // 表情を笑顔にする
+                        // ★表情を「まばたき（目を閉じる）」にする
                         if (currentVrm && currentVrm.expressionManager) {
-                            currentVrm.expressionManager.setValue('joy', 1.0);
-                            currentVrm.expressionManager.update(); // 表情マネージャーの更新
+                            currentVrm.expressionManager.setValue('blink', 1.0); // 1.0で全閉じ
+                            currentVrm.expressionManager.update();
                         }
 
                         document.getElementById('status').textContent = "お疲れ様！";
@@ -215,12 +215,12 @@ if (timeLeft <= 0) {
                             animationAction.paused = true; 
                         }
 
-                        // ★ここが重要：ポーズ停止後にアバター全体の見た目を1回だけ強制更新する
+                        // 見た目を強制更新（これで目が閉じた状態で固まります）
                         if (currentVrm) {
                             currentVrm.update(0); 
                         }
 
-                        timeLeft = 25 * 60; // タイマーをリセット
+                        timeLeft = 10; // テスト用に10秒でリセット
                     }
 
                     // 画面表示の更新
@@ -249,6 +249,7 @@ if (timeLeft <= 0) {
 </body>
 
 </html>
+
 
 
 
