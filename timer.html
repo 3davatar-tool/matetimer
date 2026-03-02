@@ -83,7 +83,7 @@ button:active { transform: scale(0.95); }
 <body>
     <div id="canvas-container"></div>
     <div class="container">
-        <div id="status">集中！</div>
+        <div id="status">集中</div>
         <div id="timer">25:00</div>
         <button id="startBtn">開始</button>
     </div>
@@ -175,7 +175,7 @@ button:active { transform: scale(0.95); }
                 if (animationAction) animationAction.stop();
 } else {
                 // 開始処理
-                document.getElementById('status').textContent = "集中！";
+                document.getElementById('status').textContent = "集中";
                 
                 // ★表情をリセット（目をパッチリ開ける）
                 if (currentVrm && currentVrm.expressionManager) {
@@ -206,7 +206,7 @@ button:active { transform: scale(0.95); }
                             currentVrm.expressionManager.update();
                         }
 
-                        document.getElementById('status').textContent = "お疲れ様！";
+                        document.getElementById('status').textContent = "お疲れ様";
                         document.getElementById('startBtn').textContent = "開始";
 
                         // ポーズを止める
@@ -248,6 +248,7 @@ button:active { transform: scale(0.95); }
 </body>
 
 </html>
+
 
 
 
