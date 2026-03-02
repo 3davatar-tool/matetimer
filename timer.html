@@ -173,13 +173,13 @@ button:active { transform: scale(0.95); }
                 timer = null;
                 document.getElementById('startBtn').textContent = "開始";
                 if (animationAction) animationAction.stop();
-            } else {
+} else {
                 // 開始処理
                 document.getElementById('status').textContent = "集中！";
                 
-                // 表情を真面目な顔に戻す
+                // ★表情をリセット（目をパッチリ開ける）
                 if (currentVrm && currentVrm.expressionManager) {
-                    currentVrm.expressionManager.setValue('joy', 0.0);
+                    currentVrm.expressionManager.setValue('blink', 0.0); // 0.0 で目を開く
                     currentVrm.expressionManager.update();
                 }
 
@@ -187,10 +187,9 @@ button:active { transform: scale(0.95); }
                 
                 // アニメーションを再開
                 if (animationAction) {
-                    animationAction.paused = false; // 一時停止を解除
+                    animationAction.paused = false;
                     animationAction.play();
                 }
-
                 // カウントダウン開始
                 timer = setInterval(() => {
                     timeLeft--;
@@ -249,6 +248,7 @@ button:active { transform: scale(0.95); }
 </body>
 
 </html>
+
 
 
 
