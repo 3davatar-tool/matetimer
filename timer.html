@@ -165,38 +165,43 @@ button:active { transform: scale(0.95); }
             if (file) loadVRM(URL.createObjectURL(file));
         };
 
-        // タイマー開始・停止ボタンの処理
+// タイマー開始・停止ボタンの処理
         document.getElementById('startBtn').onclick = () => {
             if (timer) {
-                // 停止処理
+                // 停止（キャンセル）処理
                 clearInterval(timer); 
                 timer = null;
                 document.getElementById('startBtn').textContent = "開始";
                 if (animationAction) animationAction.stop();
             } else {
-
-                // 開始時に表情と文字をリセットする
+                // 開始処理
                 document.getElementById('status').textContent = "集中！";
+                
+                // 表情を真面目な顔に戻す
                 if (currentVrm && currentVrm.expressionManager) {
-                    currentVrm.expressionManager.setValue('joy', 0.0); // 真面目な顔に戻す
+                    currentVrm.expressionManager.setValue('joy', 0.0);
                     currentVrm.expressionManager.update();
                 }
 
-                
-                // 開始処理
                 document.getElementById('startBtn').textContent = "停止";
-                if (animationAction) animationAction.play();
+                
+                // アニメーションを再開
+                if (animationAction) {
+                    animationAction.paused = false; // 一時停止を解除
+                    animationAction.play();
+                }
 
+                // カウントダウン開始
                 timer = setInterval(() => {
                     timeLeft--;
                     
-// 終了判定
+                    // 終了判定
                     if (timeLeft <= 0) {
                         clearInterval(timer); 
                         timer = null;
                         finishSound.play(); // 音を鳴らす
 
-                        // 表情を笑顔（joy）にする
+                        // 表情を笑顔にする
                         if (currentVrm && currentVrm.expressionManager) {
                             currentVrm.expressionManager.setValue('joy', 1.0);
                             currentVrm.expressionManager.update();
@@ -204,7 +209,12 @@ button:active { transform: scale(0.95); }
 
                         document.getElementById('status').textContent = "お疲れ様！";
                         document.getElementById('startBtn').textContent = "開始";
-                        if (animationAction) animationAction.stop();
+
+                        // ポーズを止めたまま笑顔を維持
+                        if (animationAction) {
+                            animationAction.paused = true; 
+                        }
+
                         timeLeft = 25 * 60; // タイマーをリセット
                     }
 
@@ -215,7 +225,6 @@ button:active { transform: scale(0.95); }
                 }, 1000);
             }
         };
-
         // ループ
         const clock = new THREE.Clock();
         function animate() {
@@ -235,6 +244,7 @@ button:active { transform: scale(0.95); }
 </body>
 
 </html>
+
 
 
 
