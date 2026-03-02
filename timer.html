@@ -6,34 +6,26 @@
     
     <title>mateTimer - Stable Version</title>
 <style>
-
 body {
     margin: 0;
-    /* 背景画像の設定 */
     background-image: url('backimage/back_image.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     background-attachment: fixed;
-    
-    /* 時計を中央に配置するための追加設定 */
     display: flex;
-    justify-content: center; /* 横方向の中央 */
-    align-items: center;     /* 縦方向の中央 */
-    height: 100vh;           /* 画面の高さ一杯を使う */
-    
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
     overflow: hidden;
 }
-
 #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-
-/* タイマー部分をスマホでも見やすく */
 .container { 
     position: relative; 
     z-index: 10; 
     text-align: center; 
     padding: 20px; 
-    border: 3px solid rgba(255, 255, 255, 0.8); /* 縁も白っぽく */
+    border: 3px solid rgba(255, 255, 255, 0.8); 
     border-radius: 50%; 
     width: 260px; 
     height: 260px; 
@@ -41,43 +33,27 @@ body {
     flex-direction: column; 
     justify-content: center; 
     align-items: center; 
-    background: rgba(255, 255, 255, 0.6); /* ← ここを黒から「透ける白」に変更 */
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3); /* 影も白く */
+    background: rgba(255, 255, 255, 0.6); 
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3); 
 }
-
 #timer { 
     font-size: 4rem; 
     font-weight: bold; 
     margin: 5px 0; 
-    color: #000000; /* ← 文字を黒に */
+    color: #000000; 
     font-family: 'Courier New', Courier, monospace; 
 }
-
 #status { 
-    font-size: 1.8rem; /* ← サイズを大きく */
-    font-weight: 900;  /* ← 太く */
-    color: #000000;    /* ← 文字を黒に */
+    font-size: 1.8rem; 
+    font-weight: 900;  
+    color: #000000;    
     letter-spacing: 3px; 
     margin-bottom: 5px; 
-    font-family: sans-serif; /* 太ゴシック系 */
+    font-family: sans-serif; 
 }
-
-
-
-/* ボタンを指で押しやすく大きく */
-
 button { background: #00f2ff; color: #000; border: none; padding: 12px 24px; border-radius: 30px; cursor: pointer; font-weight: bold; font-size: 1.1rem; transition: transform 0.1s; touch-action: manipulation; }
-
 button:active { transform: scale(0.95); }
-
-
-
-/* 下部のコントロールパネル */
-
 .controls { position: absolute; bottom: 30px; z-index: 20; display: flex; gap: 15px; width: 100%; justify-content: center; }
-
-.sub-btn { background: rgba(0, 242, 255, 0.2); color: #00f2ff; border: 1px solid #00f2ff; font-size: 0.9rem; padding: 10px 18px; }
-
 </style>
 </head>
 <body>
@@ -105,17 +81,18 @@ button:active { transform: scale(0.95); }
     }
     </script>
 
-<script type="module">
+    <script type="module">
         import * as THREE from 'three';
         import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
         import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
         import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
         import { VRMAnimationLoaderPlugin, createVRMAnimationClip } from '@pixiv/three-vrm-animation';
 
-        let timer = null, timeLeft = 10 * 1;
+        let timer = null, timeLeft = 10 * 1; // テスト用10秒
         let currentVrm = null, mixer = null, animationAction = null;
+        let blinkTimer = 0;
+        let nextBlinkTime = 2 + Math.random() * 3;
 
-        // 3Dシーン
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(30, window.innerWidth/window.innerHeight, 0.1, 20);
         camera.position.set(0, 1.3, 3.5);
@@ -131,9 +108,7 @@ button:active { transform: scale(0.95); }
         loader.register((p) => new VRMLoaderPlugin(p));
         loader.register((p) => new VRMAnimationLoaderPlugin(p));
 
-        // アバター読み込み関数
         async function loadVRM(url) {
-            console.log("Loading VRM...");
             try {
                 if (currentVrm) { scene.remove(currentVrm.scene); }
                 const gltf = await loader.loadAsync(url);
@@ -141,7 +116,6 @@ button:active { transform: scale(0.95); }
                 scene.add(currentVrm.scene);
                 currentVrm.scene.rotation.y = Math.PI;
 
-                // モーション　1から7までの数字をランダムに生成
                 const randomNum = Math.floor(Math.random() * 7) + 1;
                 const motionPath = `motions/VRMA_0${randomNum}.vrma`;
                 const vrmaGltf = await loader.loadAsync(motionPath).catch(() => null);
@@ -151,112 +125,89 @@ button:active { transform: scale(0.95); }
                     animationAction = mixer.clipAction(clip);
                     if (timer) animationAction.play();
                 }
-                console.log("VRM Loaded!");
             } catch (e) { console.error(e); alert("読み込みエラー"); }
         }
 
-        // 音源の準備
         const finishSound = new Audio('sounds/finish.mp3');
         
-        // ボタン操作
         document.getElementById('vrmUploadBtn').onclick = () => document.getElementById('vrmInput').click();
         document.getElementById('vrmInput').onchange = (e) => {
             const file = e.target.files[0];
             if (file) loadVRM(URL.createObjectURL(file));
         };
 
-// タイマー開始・停止ボタンの処理
+        // タイマー開始・停止ボタン
         document.getElementById('startBtn').onclick = () => {
             if (timer) {
-                // 停止（キャンセル）処理
+                // 停止（キャンセル）
                 clearInterval(timer); 
                 timer = null;
                 document.getElementById('startBtn').textContent = "開始";
                 if (animationAction) animationAction.stop();
-} else {
-                // 開始処理
+            } else {
+                // 開始
                 document.getElementById('status').textContent = "集中";
-                
-                // ★表情をリセット（目をパッチリ開ける）
                 if (currentVrm && currentVrm.expressionManager) {
-                    currentVrm.expressionManager.setValue('blink', 0.0); // 0.0 で目を開く
+                    currentVrm.expressionManager.setValue('blink', 0.0);
                     currentVrm.expressionManager.update();
                 }
-
                 document.getElementById('startBtn').textContent = "停止";
-                
-                // アニメーションを再開
                 if (animationAction) {
                     animationAction.paused = false;
                     animationAction.play();
                 }
-                // カウントダウン開始
                 timer = setInterval(() => {
                     timeLeft--;
-                    
-// 終了判定
                     if (timeLeft <= 0) {
                         clearInterval(timer); 
                         timer = null;
-                        finishSound.play(); // 音を鳴らす
-
-                        // ★表情を「まばたき（目を閉じる）」にする
+                        finishSound.play();
                         if (currentVrm && currentVrm.expressionManager) {
-                            currentVrm.expressionManager.setValue('blink', 1.0); // 1.0で全閉じ
+                            currentVrm.expressionManager.setValue('blink', 1.0);
                             currentVrm.expressionManager.update();
                         }
-
                         document.getElementById('status').textContent = "お疲れ様";
                         document.getElementById('startBtn').textContent = "開始";
-
-                        // ポーズを止める
-                        if (animationAction) {
-                            animationAction.paused = true; 
-                        }
-
-                        // 見た目を強制更新（これで目が閉じた状態で固まります）
-                        if (currentVrm) {
-                            currentVrm.update(0); 
-                        }
-
-                        timeLeft = 10; // テスト用に10秒でリセット
+                        if (animationAction) { animationAction.paused = true; }
+                        if (currentVrm) { currentVrm.update(0); }
+                        timeLeft = 25 * 60; // 終了後に25分にリセット
                     }
-
-                    // 画面表示の更新
                     const m = Math.floor(timeLeft / 60);
                     const s = timeLeft % 60;
                     document.getElementById('timer').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
                 }, 1000);
             }
         };
-        // ループ
+
         const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
             const delta = clock.getDelta();
             if (mixer) mixer.update(delta);
+
+            if (currentVrm && currentVrm.expressionManager) {
+                blinkTimer += delta;
+                const statusText = document.getElementById('status').textContent;
+                // 「集中」の間だけまばたきを実行
+                if (statusText === "集中") {
+                    if (blinkTimer >= nextBlinkTime) {
+                        currentVrm.expressionManager.setValue('blink', 1.0);
+                        if (blinkTimer >= nextBlinkTime + 0.1) {
+                            currentVrm.expressionManager.setValue('blink', 0.0);
+                            blinkTimer = 0;
+                            nextBlinkTime = 2 + Math.random() * 3;
+                        }
+                    }
+                }
+            }
             if (currentVrm) currentVrm.update(delta);
             renderer.render(scene, camera);
         }
         animate();
 
-        // 小窓
         document.getElementById('pipBtn').onclick = () => {
             window.open(window.location.href.split('?')[0] + '?mode=mini', 'mini', 'width=400,height=500');
         };
     </script>
 </body>
-
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
