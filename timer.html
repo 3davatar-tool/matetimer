@@ -99,8 +99,10 @@ button:active { transform: scale(0.95); }
                 scene.add(currentVrm.scene);
                 currentVrm.scene.rotation.y = Math.PI;
 
-                // モーション
-                const vrmaGltf = await loader.loadAsync('motions/VRMA_01.vrma').catch(() => null);
+                // モーション　1から7までの数字をランダムに生成し、ファイル名を組み立てる
+const randomNum = Math.floor(Math.random() * 7) + 1;
+const motionPath = `motions/VRMA_0${randomNum}.vrma`;
+const vrmaGltf = await loader.loadAsync(motionPath).catch(() => null);
                 if (vrmaGltf) {
                     mixer = new THREE.AnimationMixer(currentVrm.scene);
                     const clip = createVRMAnimationClip(vrmaGltf.userData.vrmAnimations[0], currentVrm);
@@ -153,3 +155,4 @@ button:active { transform: scale(0.95); }
 </body>
 
 </html>
+
