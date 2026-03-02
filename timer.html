@@ -105,7 +105,7 @@ button:active { transform: scale(0.95); }
     }
     </script>
 
-    <script type="module">
+<script type="module">
         import * as THREE from 'three';
         import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
         import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -141,10 +141,10 @@ button:active { transform: scale(0.95); }
                 scene.add(currentVrm.scene);
                 currentVrm.scene.rotation.y = Math.PI;
 
-                // モーション　1から7までの数字をランダムに生成し、ファイル名を組み立てる
-const randomNum = Math.floor(Math.random() * 7) + 1;
-const motionPath = `motions/VRMA_0${randomNum}.vrma`;
-const vrmaGltf = await loader.loadAsync(motionPath).catch(() => null);
+                // モーション　1から7までの数字をランダムに生成
+                const randomNum = Math.floor(Math.random() * 7) + 1;
+                const motionPath = `motions/VRMA_0${randomNum}.vrma`;
+                const vrmaGltf = await loader.loadAsync(motionPath).catch(() => null);
                 if (vrmaGltf) {
                     mixer = new THREE.AnimationMixer(currentVrm.scene);
                     const clip = createVRMAnimationClip(vrmaGltf.userData.vrmAnimations[0], currentVrm);
@@ -155,6 +155,9 @@ const vrmaGltf = await loader.loadAsync(motionPath).catch(() => null);
             } catch (e) { console.error(e); alert("読み込みエラー"); }
         }
 
+        // 音源の準備
+        const finishSound = new Audio('sounds/finish.mp3');
+        
         // ボタン操作
         document.getElementById('vrmUploadBtn').onclick = () => document.getElementById('vrmInput').click();
         document.getElementById('vrmInput').onchange = (e) => {
@@ -162,19 +165,37 @@ const vrmaGltf = await loader.loadAsync(motionPath).catch(() => null);
             if (file) loadVRM(URL.createObjectURL(file));
         };
 
+        // タイマー開始・停止ボタンの処理
         document.getElementById('startBtn').onclick = () => {
             if (timer) {
-                clearInterval(timer); timer = null;
+                // 停止処理
+                clearInterval(timer); 
+                timer = null;
                 document.getElementById('startBtn').textContent = "開始";
                 if (animationAction) animationAction.stop();
             } else {
-                timer = setInterval(() => {
-                    timeLeft--;
-                    const m = Math.floor(timeLeft/60), s = timeLeft%60;
-                    document.getElementById('timer').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
-                }, 1000);
+                // 開始処理
                 document.getElementById('startBtn').textContent = "停止";
                 if (animationAction) animationAction.play();
+
+                timer = setInterval(() => {
+                    timeLeft--;
+                    
+                    // 終了判定
+                    if (timeLeft <= 0) {
+                        clearInterval(timer); 
+                        timer = null;
+                        finishSound.play(); // 音を鳴らす
+                        document.getElementById('startBtn').textContent = "開始";
+                        if (animationAction) animationAction.stop();
+                        timeLeft = 25 * 60; // タイマーをリセット
+                    }
+
+                    // 画面表示の更新
+                    const m = Math.floor(timeLeft / 60);
+                    const s = timeLeft % 60;
+                    document.getElementById('timer').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+                }, 1000);
             }
         };
 
@@ -197,6 +218,7 @@ const vrmaGltf = await loader.loadAsync(motionPath).catch(() => null);
 </body>
 
 </html>
+
 
 
 
