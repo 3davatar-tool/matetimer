@@ -9,12 +9,19 @@
 
 body {
     margin: 0;
-    /* 背景画像の設定：フォルダ名 backimage/ を追加 */
+    /* 背景画像の設定 */
     background-image: url('backimage/back_image.png');
-    background-size: cover;      /* 画面全体に広げる */
-    background-position: center;  /* 中央に配置 */
-    background-repeat: no-repeat; /* 繰り返さない */
-    background-attachment: fixed; /* 背景を固定 */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    
+    /* 時計を中央に配置するための追加設定 */
+    display: flex;
+    justify-content: center; /* 横方向の中央 */
+    align-items: center;     /* 縦方向の中央 */
+    height: 100vh;           /* 画面の高さ一杯を使う */
+    
     overflow: hidden;
 }
 
@@ -164,5 +171,6 @@ const vrmaGltf = await loader.loadAsync(motionPath).catch(() => null);
 </body>
 
 </html>
+
 
 
