@@ -174,6 +174,15 @@ button:active { transform: scale(0.95); }
                 document.getElementById('startBtn').textContent = "開始";
                 if (animationAction) animationAction.stop();
             } else {
+
+                // 開始時に表情と文字をリセットする
+                document.getElementById('status').textContent = "集中！";
+                if (currentVrm && currentVrm.expressionManager) {
+                    currentVrm.expressionManager.setValue('joy', 0.0); // 真面目な顔に戻す
+                    currentVrm.expressionManager.update();
+                }
+
+                
                 // 開始処理
                 document.getElementById('startBtn').textContent = "停止";
                 if (animationAction) animationAction.play();
@@ -181,11 +190,19 @@ button:active { transform: scale(0.95); }
                 timer = setInterval(() => {
                     timeLeft--;
                     
-                    // 終了判定
+// 終了判定
                     if (timeLeft <= 0) {
                         clearInterval(timer); 
                         timer = null;
                         finishSound.play(); // 音を鳴らす
+
+                        // 表情を笑顔（joy）にする
+                        if (currentVrm && currentVrm.expressionManager) {
+                            currentVrm.expressionManager.setValue('joy', 1.0);
+                            currentVrm.expressionManager.update();
+                        }
+
+                        document.getElementById('status').textContent = "お疲れ様！";
                         document.getElementById('startBtn').textContent = "開始";
                         if (animationAction) animationAction.stop();
                         timeLeft = 25 * 60; // タイマーをリセット
@@ -218,6 +235,7 @@ button:active { transform: scale(0.95); }
 </body>
 
 </html>
+
 
 
 
