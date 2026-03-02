@@ -27,14 +27,40 @@ body {
 
 #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
 
-
 /* タイマー部分をスマホでも見やすく */
+.container { 
+    position: relative; 
+    z-index: 10; 
+    text-align: center; 
+    padding: 20px; 
+    border: 3px solid rgba(255, 255, 255, 0.8); /* 縁も白っぽく */
+    border-radius: 50%; 
+    width: 260px; 
+    height: 260px; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center; 
+    align-items: center; 
+    background: rgba(255, 255, 255, 0.6); /* ← ここを黒から「透ける白」に変更 */
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3); /* 影も白く */
+}
 
-.container { position: relative; z-index: 10; text-align: center; padding: 20px; border: 3px solid #00f2ff; border-radius: 50%; width: 260px; height: 260px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0,0,0,0.6); box-shadow: 0 0 20px rgba(0, 242, 255, 0.3); }
+#timer { 
+    font-size: 4rem; 
+    font-weight: bold; 
+    margin: 5px 0; 
+    color: #000000; /* ← 文字を黒に */
+    font-family: 'Courier New', Courier, monospace; 
+}
 
-#timer { font-size: 4rem; font-weight: bold; margin: 5px 0; font-family: 'Courier New', Courier, monospace; }
-
-#status { font-size: 1.2rem; letter-spacing: 3px; margin-bottom: 5px; }
+#status { 
+    font-size: 1.8rem; /* ← サイズを大きく */
+    font-weight: 900;  /* ← 太く */
+    color: #000000;    /* ← 文字を黒に */
+    letter-spacing: 3px; 
+    margin-bottom: 5px; 
+    font-family: sans-serif; /* 太ゴシック系 */
+}
 
 
 
@@ -171,6 +197,7 @@ const vrmaGltf = await loader.loadAsync(motionPath).catch(() => null);
 </body>
 
 </html>
+
 
 
 
