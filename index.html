@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="manifest" href="manifest.json">
-    <title>mateTimer - Custom Version</title>
+    <title>mateTimer - Fixed Version</title>
 <style>
-/* フォントをゴシック体で統一 */
 body {
     margin: 0;
     background-image: url('backimage/back_image.png');
@@ -22,8 +21,6 @@ body {
     font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
 }
 #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-
-/* 中央のタイマー表示エリア（スッキリ化） */
 .container { 
     position: relative; 
     z-index: 10; 
@@ -40,68 +37,22 @@ body {
     background: rgba(255, 255, 255, 0.6); 
     box-shadow: 0 0 20px rgba(255, 255, 255, 0.3); 
 }
-#timer { 
-    font-size: 4rem; 
-    font-weight: bold; 
-    margin: 5px 0; 
-    color: #000000; 
-    /* タイマー数字のみ視認性の高い等幅フォントを推奨しますが、全体に合わせてゴシックに */
-}
-#status { 
-    font-size: 1.8rem; 
-    font-weight: 900;  
-    color: #000000;    
-    letter-spacing: 3px; 
-    margin-bottom: 5px; 
-}
-
-/* 下部の設定・操作エリア */
-.controls { 
-    position: absolute; 
-    bottom: 20px; 
-    z-index: 20; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    gap: 10px; 
-    width: 100%; 
-}
-
-/* 集中/休憩の設定入力欄（アバター変更ボタンの上に配置） */
+#timer { font-size: 4rem; font-weight: bold; margin: 5px 0; color: #000; }
+#status { font-size: 1.8rem; font-weight: 900; color: #000; letter-spacing: 3px; margin-bottom: 5px; }
+.controls { position: absolute; bottom: 20px; z-index: 20; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
 .setting-group {
     display: flex;
     gap: 15px;
-    background: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.6);
     padding: 8px 15px;
     border-radius: 20px;
     font-size: 0.9rem;
     font-weight: bold;
     color: #000;
 }
-.setting-group input {
-    width: 35px;
-    border-radius: 5px;
-    border: 1px solid rgba(0, 242, 255, 0.5);
-    text-align: center;
-    background: white;
-    font-weight: bold;
-    margin: 0 3px;
-}
-
-button { 
-    background: #00f2ff; 
-    color: #000; 
-    border: none; 
-    padding: 12px 24px; 
-    border-radius: 30px; 
-    cursor: pointer; 
-    font-weight: bold; 
-    font-size: 1.1rem; 
-    transition: transform 0.1s; 
-    touch-action: manipulation; 
-}
+.setting-group input { width: 40px; border-radius: 5px; border: 1px solid #00f2ff; text-align: center; font-weight: bold; margin: 0 3px; }
+button { background: #00f2ff; color: #000; border: none; padding: 12px 24px; border-radius: 30px; cursor: pointer; font-weight: bold; font-size: 1.1rem; transition: transform 0.1s; touch-action: manipulation; }
 button:active { transform: scale(0.95); }
-
 </style>
 </head>
 <body>
@@ -111,7 +62,6 @@ button:active { transform: scale(0.95); }
         <div id="timer">25:00</div>
         <button id="startBtn">開始</button>
     </div>
-
     <div class="controls">
         <div class="setting-group">
             <label>集中<input type="number" id="workInput" value="25">分</label>
@@ -119,3 +69,144 @@ button:active { transform: scale(0.95); }
         </div>
         <button id="vrmUploadBtn">アバター変更</button>
     </div>
+    <input type="file" id="vrmInput" accept=".vrm" style="display: none;">
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.154.0/build/three.module.js",
+            "three/examples/jsm/loaders/GLTFLoader.js": "https://unpkg.com/three@0.154.0/examples/jsm/loaders/GLTFLoader.js",
+            "three/examples/jsm/controls/OrbitControls.js": "https://unpkg.com/three@0.154.0/examples/jsm/controls/OrbitControls.js",
+            "@pixiv/three-vrm": "https://unpkg.com/@pixiv/three-vrm@2.1.0/lib/three-vrm.module.js",
+            "@pixiv/three-vrm-animation": "https://unpkg.com/@pixiv/three-vrm-animation@2.1.0/lib/three-vrm-animation.module.js"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+        import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+        import { VRMLoaderPlugin } from '@pixiv/three-vrm';
+        import { VRMAnimationLoaderPlugin, createVRMAnimationClip } from '@pixiv/three-vrm-animation';
+
+        let timer = null, timeLeft = 25 * 60;
+        let currentVrm = null, mixer = null, animationAction = null;
+        let blinkTimer = 0, nextBlinkTime = 2 + Math.random() * 3;
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(30, window.innerWidth/window.innerHeight, 0.1, 20);
+        camera.position.set(0, 1.3, 3.5);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+        
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 1.3, 0);
+        scene.add(new THREE.DirectionalLight(0xffffff, 1.0), new THREE.AmbientLight(0xffffff, 0.4));
+
+        const loader = new GLTFLoader();
+        loader.register((p) => new VRMLoaderPlugin(p));
+        loader.register((p) => new VRMAnimationLoaderPlugin(p));
+
+        async function loadVRM(url) {
+            try {
+                if (currentVrm) scene.remove(currentVrm.scene);
+                const gltf = await loader.loadAsync(url);
+                currentVrm = gltf.userData.vrm;
+                scene.add(currentVrm.scene);
+                currentVrm.scene.rotation.y = Math.PI;
+
+                const randomNum = Math.floor(Math.random() * 7) + 1;
+                const vrmaGltf = await loader.loadAsync(`motions/VRMA_0${randomNum}.vrma`).catch(() => null);
+                if (vrmaGltf) {
+                    mixer = new THREE.AnimationMixer(currentVrm.scene);
+                    const clip = createVRMAnimationClip(vrmaGltf.userData.vrmAnimations[0], currentVrm);
+                    animationAction = mixer.clipAction(clip);
+                    animationAction.play();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        const finishSound = new Audio('sounds/finish.mp3');
+
+        function displayTime() {
+            const m = Math.floor(timeLeft / 60);
+            const s = timeLeft % 60;
+            document.getElementById('timer').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        const updateInitialTime = () => {
+            if (!timer) {
+                const workMin = parseInt(document.getElementById('workInput').value) || 25;
+                const restMin = parseInt(document.getElementById('restInput').value) || 5;
+                timeLeft = (document.getElementById('status').textContent === "休憩" ? restMin : workMin) * 60;
+                displayTime();
+            }
+        };
+
+        document.getElementById('workInput').addEventListener('input', updateInitialTime);
+        document.getElementById('restInput').addEventListener('input', updateInitialTime);
+        document.getElementById('vrmUploadBtn').onclick = () => document.getElementById('vrmInput').click();
+        document.getElementById('vrmInput').onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) loadVRM(URL.createObjectURL(file));
+        };
+
+        document.getElementById('startBtn').onclick = () => {
+            finishSound.play().then(() => { finishSound.pause(); finishSound.currentTime = 0; }).catch(() => {});
+            if (timer) {
+                clearInterval(timer); timer = null;
+                document.getElementById('startBtn').textContent = "開始";
+                if (animationAction) animationAction.stop();
+            } else {
+                const statusEl = document.getElementById('status');
+                if (statusEl.textContent === "お疲れ様") statusEl.textContent = "集中";
+                document.getElementById('startBtn').textContent = "停止";
+                if (animationAction) { animationAction.paused = false; animationAction.play(); }
+                
+                timer = setInterval(() => {
+                    timeLeft--;
+                    if (timeLeft <= 0) {
+                        clearInterval(timer); timer = null;
+                        finishSound.play();
+                        if (statusEl.textContent === "集中") {
+                            statusEl.textContent = "休憩";
+                            timeLeft = (parseInt(document.getElementById('restInput').value) || 5) * 60;
+                            setTimeout(() => { document.getElementById('startBtn').click(); }, 3000);
+                        } else {
+                            statusEl.textContent = "集中";
+                            timeLeft = (parseInt(document.getElementById('workInput').value) || 25) * 60;
+                            document.getElementById('startBtn').textContent = "開始";
+                        }
+                    }
+                    displayTime();
+                }, 1000);
+            }
+        };
+
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            if (mixer) mixer.update(delta);
+            if (currentVrm && currentVrm.expressionManager && document.getElementById('status').textContent === "集中") {
+                blinkTimer += delta;
+                if (blinkTimer >= nextBlinkTime) {
+                    currentVrm.expressionManager.setValue('blink', 1.0);
+                    if (blinkTimer >= nextBlinkTime + 0.1) {
+                        currentVrm.expressionManager.setValue('blink', 0.0);
+                        blinkTimer = 0; nextBlinkTime = 2 + Math.random() * 3;
+                    }
+                }
+                currentVrm.expressionManager.update();
+            }
+            if (currentVrm) currentVrm.update(delta);
+            renderer.render(scene, camera);
+        }
+
+        loadVRM('avatar/welcomecat.vrm');
+        animate();
+    </script>
+</body>
+</html>
