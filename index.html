@@ -6,7 +6,7 @@
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>mateTimer - v26 Final Balance</title>
+    <title>mateTimer - v28 Golden Balance Fixed</title>
     <style>
         :root {
             --primary-color: #2b0080;
@@ -27,22 +27,23 @@
         .layout-wrapper {
             position: relative; z-index: 10;
             display: flex; flex-direction: column;
-            justify-content: space-between; /* 上下に分散 */
+            justify-content: space-between;
             height: 100dvh; width: 100%;
-            padding-top: var(--safe-top);
-            padding-bottom: calc(var(--safe-bottom) + 20px);
+            padding-top: calc(var(--safe-top) + 80px); /* ロゴの分を空ける */
+            padding-bottom: calc(var(--safe-bottom) + 30px);
             box-sizing: border-box;
             pointer-events: none;
         }
 
         .timer-container {
             position: relative; width: 280px; height: 280px;
-            margin: 15vh auto 0 auto; /* タイマーの位置を少し下げる */
+            margin: 0 auto;
             display: flex; flex-direction: column;
             justify-content: center; align-items: center;
             background: var(--bg-glass); border-radius: 50%;
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-            pointer-events: auto;
+            pointer-events: auto; /* ここは確実に触れる */
+            transform: translateY(20px); /* タイマーを少し下げてバランス調整 */
         }
 
         #progress-svg { position: absolute; top: 0; left: 0; width: 280px; height: 280px; transform: rotate(-90deg); }
@@ -56,7 +57,7 @@
         #status { font-size: 1.6rem; font-weight: 900; color: #000; letter-spacing: 3px; z-index: 11; margin-bottom: -5px; }
         #timer { font-size: 4rem; font-weight: bold; color: #000; z-index: 11; margin: 5px 0; }
         
-        .footer { display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: auto; }
+        .footer { display: flex; flex-direction: column; align-items: center; gap: 15px; pointer-events: auto; }
         .setting-group {
             display: flex; gap: 10px; background: rgba(255, 255, 255, 0.8);
             padding: 8px 15px; border-radius: 20px; font-weight: bold;
@@ -69,6 +70,7 @@
             padding: 12px 35px; border-radius: 30px; cursor: pointer;
             font-weight: bold; font-size: 1.1rem;
             box-shadow: 0 4px 15px rgba(43, 0, 128, 0.3);
+            -webkit-tap-highlight-color: transparent;
         }
     </style>
 </head>
@@ -84,6 +86,7 @@
             <div id="timer">25:00</div>
             <button id="startBtn">開始</button>
         </div>
+
         <footer class="footer">
             <div class="setting-group">
                 <label>集中<input type="number" id="workInput" value="25">分</label>
@@ -125,16 +128,14 @@
 
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 20);
-        // カメラ位置を調整（アバターを中央へ）
-        camera.position.set(0, 0.85, 3.5); 
+        camera.position.set(0, 0.8, 3.5); 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
         document.getElementById('canvas-container').appendChild(renderer.domElement);
         
         const controls = new OrbitControls(camera, renderer.domElement);
-        // アバターの胸あたりに視点を固定
-        controls.target.set(0, 0.85, 0); 
+        controls.target.set(0, 0.8, 0); 
         controls.enableDamping = true;
         controls.update();
 
@@ -171,15 +172,15 @@
             }
         };
 
-        workInput.oninput = updateInitialTime;
-        restInput.oninput = updateInitialTime;
+        workInput.addEventListener('input', updateInitialTime);
+        restInput.addEventListener('input', updateInitialTime);
         document.getElementById('vrmUploadBtn').onclick = () => document.getElementById('vrmInput').click();
         document.getElementById('vrmInput').onchange = (e) => {
             const file = e.target.files[0];
             if (file) loadVRM(URL.createObjectURL(file));
         };
 
-        startBtn.onclick = () => {
+        startBtn.addEventListener('click', () => {
             if (timer) {
                 clearInterval(timer); timer = null;
                 startBtn.textContent = "開始";
@@ -196,7 +197,7 @@
                     displayTime();
                 }, 1000);
             }
-        };
+        });
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
