@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
-    <title>mateTimer - Stable Version</title>
     <link rel="manifest" href="manifest.json">
+    <title>mateTimer - Pro Version</title>
 <style>
 body {
     margin: 0;
@@ -54,7 +53,7 @@ body {
 }
 button { background: #00f2ff; color: #000; border: none; padding: 12px 24px; border-radius: 30px; cursor: pointer; font-weight: bold; font-size: 1.1rem; transition: transform 0.1s; touch-action: manipulation; }
 button:active { transform: scale(0.95); }
-.controls { position: absolute; bottom: 30px; z-index: 20; display: flex; gap: 15px; width: 100%; justify-content: center; }
+.controls { position: absolute; bottom: 30px; z-index: 20; display: flex; justify-content: center; width: 100%; }
 </style>
 </head>
 <body>
@@ -66,7 +65,6 @@ button:active { transform: scale(0.95); }
     </div>
     <div class="controls">
         <button id="vrmUploadBtn">アバター変更</button>
-        <button id="pipBtn">小窓モード</button>
     </div>
     <input type="file" id="vrmInput" accept=".vrm" style="display: none;">
 
@@ -89,7 +87,7 @@ button:active { transform: scale(0.95); }
         import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
         import { VRMAnimationLoaderPlugin, createVRMAnimationClip } from '@pixiv/three-vrm-animation';
 
-        let timer = null, timeLeft = 10 * 1; // テスト用10秒
+        let timer = null, timeLeft = 25 * 60; 
         let currentVrm = null, mixer = null, animationAction = null;
         let blinkTimer = 0;
         let nextBlinkTime = 2 + Math.random() * 3;
@@ -126,7 +124,7 @@ button:active { transform: scale(0.95); }
                     animationAction = mixer.clipAction(clip);
                     if (timer) animationAction.play();
                 }
-            } catch (e) { console.error(e); alert("読み込みエラー"); }
+            } catch (e) { console.error(e); }
         }
 
         const finishSound = new Audio('sounds/finish.mp3');
@@ -137,27 +135,20 @@ button:active { transform: scale(0.95); }
             if (file) loadVRM(URL.createObjectURL(file));
         };
 
-// タイマー開始・停止ボタン
         document.getElementById('startBtn').onclick = () => {
-            // ★スマホ対策：ボタンを押した瞬間に一度だけ音を「空再生」して許可を得る
             finishSound.play().then(() => {
                 finishSound.pause();
                 finishSound.currentTime = 0;
-            }).catch(e => console.log("Audio unlock failed"));
+            }).catch(() => {});
 
             if (timer) {
-                // 停止（キャンセル）
                 clearInterval(timer); 
                 timer = null;
                 document.getElementById('startBtn').textContent = "開始";
                 if (animationAction) animationAction.stop();
             } else {
-                // 開始
                 const statusEl = document.getElementById('status');
-                // 「お疲れ様」から戻る時は「集中」にする
-                if (statusEl.textContent === "お疲れ様") {
-                    statusEl.textContent = "集中";
-                }
+                if (statusEl.textContent === "お疲れ様") statusEl.textContent = "集中";
 
                 if (currentVrm && currentVrm.expressionManager) {
                     currentVrm.expressionManager.setValue('blink', 0.0);
@@ -173,26 +164,22 @@ button:active { transform: scale(0.95); }
                     if (timeLeft <= 0) {
                         clearInterval(timer); 
                         timer = null;
-                        finishSound.play(); // スマホでも鳴るようになります
+                        finishSound.play();
                         
-                        // 表情を固定（目を閉じる）
                         if (currentVrm && currentVrm.expressionManager) {
                             currentVrm.expressionManager.setValue('blink', 1.0);
                             currentVrm.expressionManager.update();
                         }
-                        if (animationAction) { animationAction.paused = true; }
-                        if (currentVrm) { currentVrm.update(0); }
+                        if (animationAction) animationAction.paused = true;
+                        if (currentVrm) currentVrm.update(0);
 
-                        // --- 自動切り替えロジック ---
                         if (statusEl.textContent === "集中") {
                             statusEl.textContent = "休憩";
-                            timeLeft = 5 * 60; // 5分にセット
-                            // 3秒後に自動で休憩タイマーをスタート
+                            timeLeft = 5 * 60; 
                             setTimeout(() => { document.getElementById('startBtn').click(); }, 3000);
                         } else {
                             statusEl.textContent = "集中";
-                            timeLeft = 25 * 60; // 25分にリセット
-                            // 休憩終了時は手動で再開を待つ（またはここもclick()にすれば無限ループ）
+                            timeLeft = 25 * 60; 
                             document.getElementById('startBtn').textContent = "開始";
                         }
                     }
@@ -211,9 +198,7 @@ button:active { transform: scale(0.95); }
 
             if (currentVrm && currentVrm.expressionManager) {
                 blinkTimer += delta;
-                const statusText = document.getElementById('status').textContent;
-                // 「集中」の間だけまばたきを実行
-                if (statusText === "集中") {
+                if (document.getElementById('status').textContent === "集中") {
                     if (blinkTimer >= nextBlinkTime) {
                         currentVrm.expressionManager.setValue('blink', 1.0);
                         if (blinkTimer >= nextBlinkTime + 0.1) {
@@ -228,12 +213,9 @@ button:active { transform: scale(0.95); }
             renderer.render(scene, camera);
         }
         animate();
-
-        document.getElementById('pipBtn').onclick = () => {
-            window.open(window.location.href.split('?')[0] + '?mode=mini', 'mini', 'width=400,height=500');
-        };
     </script>
 </body>
 </html>
+
 
 
