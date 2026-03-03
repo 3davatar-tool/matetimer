@@ -6,7 +6,7 @@
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>mateTimer - v24 Master Controls</title>
+    <title>mateTimer - v25 Final Master</title>
     <style>
         :root {
             --primary-color: #2b0080;
@@ -22,10 +22,10 @@
             font-family: "Helvetica Neue", Arial, sans-serif;
             background-color: #000;
         }
-        /* 3D背景は最背面 */
+        /* アバター背景 */
         #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         
-        /* UI全体のレイヤー：透明な場所は操作を透過させる */
+        /* UIレイヤー全体の親：透明部分はアバター操作を透過 */
         .layout-wrapper {
             position: relative; z-index: 10;
             display: flex; flex-direction: column;
@@ -34,12 +34,13 @@
             padding-top: var(--safe-top);
             padding-bottom: var(--safe-bottom);
             box-sizing: border-box;
-            pointer-events: none; /* 透明な場所はアバターにタッチを届ける */
+            pointer-events: none; /* ここが none なのでアバターが触れる */
         }
 
-        /* UI要素（タイマーやボタン）：ここは触れるように戻す */
+        /* 実際に触るUIパーツ：ここだけ pointer-events を復活させる */
         .container, .footer {
             pointer-events: auto; 
+            z-index: 100; /* 確実に最前面へ */
         }
 
         .container {
@@ -66,7 +67,6 @@
         .setting-group {
             display: flex; gap: 10px; background: rgba(255, 255, 255, 0.8);
             padding: 8px 15px; border-radius: 20px; font-weight: bold;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .setting-group input { width: 45px; height: 30px; border: 1px solid var(--primary-color); border-radius: 5px; text-align: center; font-size: 1rem; }
 
@@ -75,6 +75,7 @@
             padding: 12px 35px; border-radius: 30px; cursor: pointer;
             font-weight: bold; font-size: 1.1rem;
             box-shadow: 0 4px 15px rgba(43, 0, 128, 0.3);
+            position: relative; z-index: 110; /* ボタン単体でも z-index を上げる */
         }
         #vrmUploadBtn { padding: 8px 20px; font-size: 0.9rem; margin-top: 5px; }
     </style>
@@ -82,7 +83,8 @@
 <body>
     <div id="canvas-container"></div>
     <div class="layout-wrapper">
-        <div style="height: 40px;"></div> <div class="container">
+        <div style="height: 40px;"></div> 
+        <div class="container">
             <svg id="progress-svg">
                 <circle id="progress-bg" cx="140" cy="140" r="130"></circle>
                 <circle id="progress-bar" cx="140" cy="140" r="130"></circle>
@@ -134,16 +136,15 @@
 
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 20);
-        camera.position.set(0, 1.3, 3.5);
+        camera.position.set(0, 1.4, 3.5); // カメラを少し高くしてアバターを中央へ
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
         document.getElementById('canvas-container').appendChild(renderer.domElement);
         
-        // OrbitControlsを復活
         const controls = new OrbitControls(camera, renderer.domElement);
-        controls.target.set(0, 1.3, 0);
-        controls.enableDamping = true; // 滑らかな動き
+        controls.target.set(0, 1.0, 0); // 注視点を少し下げることで、アバターが画面中央に来るように調整
+        controls.enableDamping = true;
         controls.update();
 
         scene.add(new THREE.DirectionalLight(0xffffff, 1.0), new THREE.AmbientLight(0xffffff, 0.4));
@@ -174,9 +175,8 @@
             if (!timer) {
                 const workMin = parseInt(workInput.value) || 25;
                 const restMin = parseInt(restInput.value) || 5;
-                const isRest = statusDisplay.textContent === "休憩";
-                totalTime = (isRest ? restMin : workMin) * 60;
-                timeLeft = totalTime;
+                timeLeft = (statusDisplay.textContent === "休憩" ? restMin : workMin) * 60;
+                totalTime = timeLeft;
                 displayTime();
             }
         };
@@ -189,7 +189,8 @@
             if (file) loadVRM(URL.createObjectURL(file));
         };
 
-        startBtn.onclick = () => {
+        startBtn.onclick = (e) => {
+            e.stopPropagation(); // クリックイベントが他に漏れないように
             if (timer) {
                 clearInterval(timer); timer = null;
                 startBtn.textContent = "開始";
@@ -217,11 +218,9 @@
         loadVRM('avatar/welcomecat.vrm');
         displayTime();
         
-        const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
-            const delta = clock.getDelta();
-            if (mixer) mixer.update(delta);
+            const delta = new THREE.Clock().getDelta();
             if (currentVrm) currentVrm.update(delta);
             controls.update();
             renderer.render(scene, camera);
