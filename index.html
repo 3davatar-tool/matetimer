@@ -6,7 +6,7 @@
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>mateTimer - v40 High Position</title>
+    <title>mateTimer - v41 Sky High</title>
     <style>
         :root {
             --primary-color: #2b0080;
@@ -24,11 +24,11 @@
         #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         .ui-wrapper { position: relative; z-index: 100; width: 100%; height: 100dvh; pointer-events: none; }
 
-        /* タイマーをさらに下げて上部に広大なスペースを確保 */
+        /* タイマー：アバターの邪魔をしないよう画面下部(72%)に配置 */
         .timer-ui {
-            position: absolute; top: 70%; left: 50%;
+            position: absolute; top: 72%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 250px; height: 250px;
+            width: 240px; height: 240px;
             background: var(--bg-glass); border-radius: 50%;
             display: flex; flex-direction: column;
             justify-content: center; align-items: center;
@@ -36,15 +36,15 @@
             pointer-events: none;
         }
 
-        #progress-svg { position: absolute; top: 0; left: 0; width: 250px; height: 250px; transform: rotate(-90deg); }
+        #progress-svg { position: absolute; top: 0; left: 0; width: 240px; height: 240px; transform: rotate(-90deg); }
         #progress-bg { fill: none; stroke: rgba(43, 0, 128, 0.1); stroke-width: 8; }
         #progress-bar {
             fill: none; stroke: rgba(43, 0, 128, 0.6); stroke-width: 8;
-            stroke-linecap: round; stroke-dasharray: 722.5; /* 2 * PI * 115 */
+            stroke-linecap: round; stroke-dasharray: 691.15; /* 2 * PI * 110 */
             stroke-dashoffset: 0; transition: stroke-dashoffset 1s linear;
         }
-        #status { font-size: 1.3rem; font-weight: 900; color: #000; letter-spacing: 3px; z-index: 11; }
-        #timer { font-size: 3.2rem; font-weight: bold; color: #000; z-index: 11; margin: 2px 0; }
+        #status { font-size: 1.2rem; font-weight: 900; color: #000; letter-spacing: 3px; z-index: 11; }
+        #timer { font-size: 3rem; font-weight: bold; color: #000; z-index: 11; margin: 2px 0; }
         
         .footer-ui {
             position: absolute; bottom: calc(env(safe-area-inset-bottom, 20px) + 15px);
@@ -73,8 +73,8 @@
     <div class="ui-wrapper">
         <div class="timer-ui">
             <svg id="progress-svg">
-                <circle id="progress-bg" cx="125" cy="125" r="115"></circle>
-                <circle id="progress-bar" cx="125" cy="125" r="115"></circle>
+                <circle id="progress-bg" cx="120" cy="120" r="110"></circle>
+                <circle id="progress-bar" cx="120" cy="120" r="110"></circle>
             </svg>
             <div id="status">集中</div>
             <div id="timer">25:00</div>
@@ -121,8 +121,8 @@
 
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 20);
-        // カメラの位置をさらに高く！
-        camera.position.set(0, 3.2, 5.0); 
+        // カメラ位置を空高く！
+        camera.position.set(0, 4.0, 5.5); 
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -130,8 +130,8 @@
         document.getElementById('canvas-container').appendChild(renderer.domElement);
         
         const controls = new OrbitControls(camera, renderer.domElement);
-        // 注視点をアバターのかなり上方に設定
-        controls.target.set(0, 2.5, 0); 
+        // 注視点を画面上部に固定
+        controls.target.set(0, 3.2, 0); 
         controls.enableDamping = true;
         controls.update();
 
@@ -146,8 +146,8 @@
                 const gltf = await loader.loadAsync(url);
                 currentVrm = gltf.userData.vrm;
                 scene.add(currentVrm.scene);
-                // アバター本体を空高く物理移動！
-                currentVrm.scene.position.y = 1.8; 
+                // ★アバターを物理的に「最上部」へ飛ばす
+                currentVrm.scene.position.y = 2.4; 
                 currentVrm.scene.rotation.y = Math.PI;
 
                 const vrmaGltf = await loader.loadAsync(`motions/VRMA_01.vrma`).catch(() => null);
@@ -164,7 +164,7 @@
             const m = Math.floor(timeLeft / 60);
             const s = timeLeft % 60;
             timerDisplay.textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
-            const circumference = 722.5;
+            const circumference = 691.15;
             const offset = circumference - (timeLeft / totalTime) * circumference;
             progressBar.style.strokeDashoffset = offset;
         }
