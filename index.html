@@ -6,11 +6,13 @@
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>mateTimer - v23 Full Recovery</title>
+    <title>mateTimer - v24 Master Controls</title>
     <style>
         :root {
             --primary-color: #2b0080;
             --bg-glass: rgba(255, 255, 255, 0.7);
+            --safe-top: env(safe-area-inset-top, 20px);
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
         body {
             margin: 0; padding: 0;
@@ -20,14 +22,24 @@
             font-family: "Helvetica Neue", Arial, sans-serif;
             background-color: #000;
         }
+        /* 3D背景は最背面 */
         #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         
-        .main-ui {
+        /* UI全体のレイヤー：透明な場所は操作を透過させる */
+        .layout-wrapper {
             position: relative; z-index: 10;
-            height: 100dvh; display: flex; flex-direction: column;
+            display: flex; flex-direction: column;
             justify-content: space-around; align-items: center;
-            padding: env(safe-area-inset-top, 20px) 0 env(safe-area-inset-bottom, 20px) 0;
+            height: 100dvh; width: 100%;
+            padding-top: var(--safe-top);
+            padding-bottom: var(--safe-bottom);
             box-sizing: border-box;
+            pointer-events: none; /* 透明な場所はアバターにタッチを届ける */
+        }
+
+        /* UI要素（タイマーやボタン）：ここは触れるように戻す */
+        .container, .footer {
+            pointer-events: auto; 
         }
 
         .container {
@@ -36,6 +48,7 @@
             justify-content: center; align-items: center;
             background: var(--bg-glass); border-radius: 50%;
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+            -webkit-tap-highlight-color: transparent;
         }
 
         #progress-svg { position: absolute; top: 0; left: 0; width: 280px; height: 280px; transform: rotate(-90deg); }
@@ -46,29 +59,30 @@
             transition: stroke-dashoffset 1s linear;
         }
 
-        #status { font-size: 1.6rem; font-weight: 900; color: #000; letter-spacing: 3px; z-index: 11; }
+        #status { font-size: 1.6rem; font-weight: 900; color: #000; letter-spacing: 3px; z-index: 11; margin-bottom: -5px; }
         #timer { font-size: 4rem; font-weight: bold; color: #000; z-index: 11; margin: 5px 0; }
         
-        .footer { display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 20; }
+        .footer { display: flex; flex-direction: column; align-items: center; gap: 10px; }
         .setting-group {
             display: flex; gap: 10px; background: rgba(255, 255, 255, 0.8);
             padding: 8px 15px; border-radius: 20px; font-weight: bold;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .setting-group input { width: 45px; height: 30px; border: 1px solid var(--primary-color); border-radius: 5px; text-align: center; font-size: 1rem; }
 
         button {
             background: var(--primary-color); color: #fff; border: none;
             padding: 12px 35px; border-radius: 30px; cursor: pointer;
-            font-weight: bold; font-size: 1.1rem; z-index: 30;
+            font-weight: bold; font-size: 1.1rem;
+            box-shadow: 0 4px 15px rgba(43, 0, 128, 0.3);
         }
         #vrmUploadBtn { padding: 8px 20px; font-size: 0.9rem; margin-top: 5px; }
     </style>
 </head>
 <body>
     <div id="canvas-container"></div>
-    <div class="main-ui">
-        <div style="height: 40px;"></div>
-        <div class="container">
+    <div class="layout-wrapper">
+        <div style="height: 40px;"></div> <div class="container">
             <svg id="progress-svg">
                 <circle id="progress-bg" cx="140" cy="140" r="130"></circle>
                 <circle id="progress-bar" cx="140" cy="140" r="130"></circle>
@@ -123,10 +137,13 @@
         camera.position.set(0, 1.3, 3.5);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
         document.getElementById('canvas-container').appendChild(renderer.domElement);
         
+        // OrbitControlsを復活
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.target.set(0, 1.3, 0);
+        controls.enableDamping = true; // 滑らかな動き
         controls.update();
 
         scene.add(new THREE.DirectionalLight(0xffffff, 1.0), new THREE.AmbientLight(0xffffff, 0.4));
@@ -153,7 +170,6 @@
             progressBar.style.strokeDashoffset = offset;
         }
 
-        // 時間入力の反映
         const updateInitialTime = () => {
             if (!timer) {
                 const workMin = parseInt(workInput.value) || 25;
@@ -167,15 +183,12 @@
 
         workInput.oninput = updateInitialTime;
         restInput.oninput = updateInitialTime;
-
-        // アバター変更の接続
         vrmUploadBtn.onclick = () => vrmInput.click();
         vrmInput.onchange = (e) => {
             const file = e.target.files[0];
             if (file) loadVRM(URL.createObjectURL(file));
         };
 
-        // タイマー動作
         startBtn.onclick = () => {
             if (timer) {
                 clearInterval(timer); timer = null;
@@ -204,13 +217,16 @@
         loadVRM('avatar/welcomecat.vrm');
         displayTime();
         
+        const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
-            if (currentVrm) currentVrm.update(new THREE.Clock().getDelta());
+            const delta = clock.getDelta();
+            if (mixer) mixer.update(delta);
+            if (currentVrm) currentVrm.update(delta);
+            controls.update();
             renderer.render(scene, camera);
         }
         animate();
     </script>
 </body>
 </html>
-
