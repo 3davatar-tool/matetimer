@@ -6,7 +6,7 @@
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>mateTimer - v18 True Stable</title>
+    <title>mateTimer - v23 Full Recovery</title>
     <style>
         :root {
             --primary-color: #2b0080;
@@ -20,10 +20,8 @@
             font-family: "Helvetica Neue", Arial, sans-serif;
             background-color: #000;
         }
-        /* アバター背景 */
         #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         
-        /* UIレイヤー */
         .main-ui {
             position: relative; z-index: 10;
             height: 100dvh; display: flex; flex-direction: column;
@@ -51,24 +49,25 @@
         #status { font-size: 1.6rem; font-weight: 900; color: #000; letter-spacing: 3px; z-index: 11; }
         #timer { font-size: 4rem; font-weight: bold; color: #000; z-index: 11; margin: 5px 0; }
         
-        .footer { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .footer { display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 20; }
         .setting-group {
             display: flex; gap: 10px; background: rgba(255, 255, 255, 0.8);
             padding: 8px 15px; border-radius: 20px; font-weight: bold;
         }
-        .setting-group input { width: 40px; height: 30px; border: 1px solid var(--primary-color); border-radius: 5px; text-align: center; }
+        .setting-group input { width: 45px; height: 30px; border: 1px solid var(--primary-color); border-radius: 5px; text-align: center; font-size: 1rem; }
 
         button {
             background: var(--primary-color); color: #fff; border: none;
             padding: 12px 35px; border-radius: 30px; cursor: pointer;
-            font-weight: bold; font-size: 1.1rem; z-index: 20;
+            font-weight: bold; font-size: 1.1rem; z-index: 30;
         }
+        #vrmUploadBtn { padding: 8px 20px; font-size: 0.9rem; margin-top: 5px; }
     </style>
 </head>
 <body>
     <div id="canvas-container"></div>
     <div class="main-ui">
-        <div style="height: 50px;"></div>
+        <div style="height: 40px;"></div>
         <div class="container">
             <svg id="progress-svg">
                 <circle id="progress-bg" cx="140" cy="140" r="130"></circle>
@@ -86,6 +85,7 @@
             <button id="vrmUploadBtn">アバター変更</button>
         </footer>
     </div>
+    <input type="file" id="vrmInput" accept=".vrm" style="display: none;">
 
     <script type="importmap">
     {
@@ -110,6 +110,10 @@
         const timerDisplay = document.getElementById('timer');
         const statusDisplay = document.getElementById('status');
         const progressBar = document.getElementById('progress-bar');
+        const workInput = document.getElementById('workInput');
+        const restInput = document.getElementById('restInput');
+        const vrmUploadBtn = document.getElementById('vrmUploadBtn');
+        const vrmInput = document.getElementById('vrmInput');
 
         let timer = null, timeLeft = 25 * 60, totalTime = 25 * 60;
         let currentVrm = null, mixer = null;
@@ -149,6 +153,29 @@
             progressBar.style.strokeDashoffset = offset;
         }
 
+        // 時間入力の反映
+        const updateInitialTime = () => {
+            if (!timer) {
+                const workMin = parseInt(workInput.value) || 25;
+                const restMin = parseInt(restInput.value) || 5;
+                const isRest = statusDisplay.textContent === "休憩";
+                totalTime = (isRest ? restMin : workMin) * 60;
+                timeLeft = totalTime;
+                displayTime();
+            }
+        };
+
+        workInput.oninput = updateInitialTime;
+        restInput.oninput = updateInitialTime;
+
+        // アバター変更の接続
+        vrmUploadBtn.onclick = () => vrmInput.click();
+        vrmInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) loadVRM(URL.createObjectURL(file));
+        };
+
+        // タイマー動作
         startBtn.onclick = () => {
             if (timer) {
                 clearInterval(timer); timer = null;
@@ -160,8 +187,7 @@
                     if (timeLeft <= 0) {
                         clearInterval(timer); timer = null;
                         statusDisplay.textContent = statusDisplay.textContent === "集中" ? "休憩" : "集中";
-                        timeLeft = (statusDisplay.textContent === "休憩" ? 5 : 25) * 60;
-                        totalTime = timeLeft;
+                        updateInitialTime();
                         startBtn.textContent = "開始";
                     }
                     displayTime();
@@ -180,9 +206,7 @@
         
         function animate() {
             requestAnimationFrame(animate);
-            const delta = new THREE.Clock().getDelta();
-            if (mixer) mixer.update(delta);
-            if (currentVrm) currentVrm.update(delta);
+            if (currentVrm) currentVrm.update(new THREE.Clock().getDelta());
             renderer.render(scene, camera);
         }
         animate();
