@@ -13,10 +13,11 @@
     <meta name="apple-mobile-web-app-title" content="mateTimer">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
 
-    <title>mateTimer - v15 iOS Optimized</title>
+    <title>mateTimer - v16 Layout Fixed</title>
     <style>
         :root {
-            --safe-bottom: env(safe-area-inset-bottom, 20px);
+            /* セーフエリア + 25pxの余裕を標準に */
+            --safe-bottom: calc(env(safe-area-inset-bottom, 20px) + 25px);
         }
 
         body {
@@ -32,7 +33,6 @@
             height: 100vh;
             overflow: hidden;
             font-family: "Helvetica Neue", Arial, Hiragino Sans, sans-serif;
-            /* iOSのスクロール抑制 */
             position: fixed;
             width: 100%;
         }
@@ -59,8 +59,9 @@
             background: rgba(255, 255, 255, 0.7);
             border-radius: 50%;
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-            /* タップ時のハイライトを無効化 */
             -webkit-tap-highlight-color: transparent;
+            /* 下部のボタンとの干渉を避けるため少し上に配置 */
+            transform: translateY(-40px);
         }
 
         #progress-svg {
@@ -107,7 +108,7 @@
 
         .controls {
             position: absolute;
-            bottom: calc(var(--safe-bottom) + 10px);
+            bottom: var(--safe-bottom);
             z-index: 20;
             display: flex;
             flex-direction: column;
@@ -147,7 +148,6 @@
             font-weight: bold;
             font-size: 1.1rem;
             z-index: 11;
-            /* タップ遅延解消 */
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
             box-shadow: 0 4px 15px rgba(43, 0, 128, 0.3);
@@ -200,7 +200,6 @@
         import { VRMLoaderPlugin } from '@pixiv/three-vrm';
         import { VRMAnimationLoaderPlugin, createVRMAnimationClip } from '@pixiv/three-vrm-animation';
 
-        // サービスワーカーの登録
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js').then(reg => {
@@ -279,7 +278,6 @@
             if (file) loadVRM(URL.createObjectURL(file));
         };
 
-        // iOSオーディオ制限対策: ユーザーアクション内で一度再生・停止する
         document.getElementById('startBtn').onclick = () => {
             finishSound.play().then(() => {
                 finishSound.pause();
