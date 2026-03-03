@@ -13,30 +13,32 @@
     <meta name="apple-mobile-web-app-title" content="mateTimer">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
 
-    <title>mateTimer - v16 Layout Fixed</title>
+    <title>mateTimer - v17 Flex Layout</title>
     <style>
         :root {
-            /* セーフエリア + 25pxの余裕を標準に */
-            --safe-bottom: calc(env(safe-area-inset-bottom, 20px) + 25px);
+            /* ダークパープル */
+            --primary-color: #2b0080;
+            --bg-glass: rgba(255, 255, 255, 0.7);
+            --safe-top: env(safe-area-inset-top, 20px);
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
 
         body {
             margin: 0;
+            padding: 0;
             background-image: url('backimage/back_image.png');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
             background-attachment: fixed;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            height: 100dvh;
+            /* 動的ビューポート高さ */
             overflow: hidden;
             font-family: "Helvetica Neue", Arial, Hiragino Sans, sans-serif;
-            position: fixed;
-            width: 100%;
+            background-color: #000;
         }
 
+        /* 3D背景は最背面に固定 */
         #canvas-container {
             position: fixed;
             top: 0;
@@ -46,9 +48,47 @@
             z-index: 1;
         }
 
-        .container {
+        /* メインのFlexラッパー */
+        .layout-wrapper {
             position: relative;
             z-index: 10;
+            display: flex;
+            flex-direction: column;
+            height: 100dvh;
+            width: 100%;
+            box-sizing: border-box;
+            padding-top: var(--safe-top);
+            padding-bottom: var(--safe-bottom);
+        }
+
+        /* 上部エリア（ステータスなど） */
+        .header {
+            padding: 20px 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        #status {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #000;
+            background: rgba(255, 255, 255, 0.5);
+            padding: 5px 20px;
+            border-radius: 20px;
+            letter-spacing: 3px;
+        }
+
+        /* 中央エリア（タイマー） */
+        .main-content {
+            flex: 1;
+            /* 残りのスペースをすべて使う */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            position: relative;
             text-align: center;
             width: 280px;
             height: 280px;
@@ -56,12 +96,10 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: rgba(255, 255, 255, 0.7);
+            background: var(--bg-glass);
             border-radius: 50%;
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
             -webkit-tap-highlight-color: transparent;
-            /* 下部のボタンとの干渉を避けるため少し上に配置 */
-            transform: translateY(-40px);
         }
 
         #progress-svg {
@@ -97,24 +135,13 @@
             z-index: 11;
         }
 
-        #status {
-            font-size: 1.8rem;
-            font-weight: 900;
-            color: #000;
-            letter-spacing: 3px;
-            margin-bottom: 5px;
-            z-index: 11;
-        }
-
-        .controls {
-            position: absolute;
-            bottom: var(--safe-bottom);
-            z-index: 20;
+        /* 下部エリア（コントロール） */
+        .footer {
+            padding: 20px 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 15px;
-            width: 100%;
         }
 
         .setting-group {
@@ -131,54 +158,76 @@
         .setting-group input {
             width: 40px;
             height: 30px;
-            border: 1px solid #2b0080;
+            border: 1px solid var(--primary-color);
             border-radius: 5px;
             text-align: center;
             font-weight: bold;
             font-size: 1rem;
         }
 
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+
         button {
-            background: #2b0080;
+            background: var(--primary-color);
             color: #fff;
             border: none;
-            padding: 14px 35px;
+            padding: 12px 30px;
             border-radius: 30px;
             cursor: pointer;
             font-weight: bold;
             font-size: 1.1rem;
-            z-index: 11;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
             box-shadow: 0 4px 15px rgba(43, 0, 128, 0.3);
-            transition: transform 0.1s active;
         }
 
         button:active {
             transform: scale(0.95);
+        }
+
+        #vrmUploadBtn {
+            padding: 8px 20px;
+            font-size: 0.9rem;
+            background: rgba(43, 0, 128, 0.8);
         }
     </style>
 </head>
 
 <body>
     <div id="canvas-container"></div>
-    <div class="container">
-        <svg id="progress-svg">
-            <circle id="progress-bg" cx="140" cy="140" r="130"></circle>
-            <circle id="progress-bar" cx="140" cy="140" r="130"></circle>
-        </svg>
-        <div id="status">集中</div>
-        <div id="timer">25:00</div>
-        <button id="startBtn">開始</button>
+
+    <div class="layout-wrapper">
+        <header class="header">
+            <div id="status">集中</div>
+        </header>
+
+        <main class="main-content">
+            <div class="container">
+                <svg id="progress-svg">
+                    <circle id="progress-bg" cx="140" cy="140" r="130"></circle>
+                    <circle id="progress-bar" cx="140" cy="140" r="130"></circle>
+                </svg>
+                <div id="timer">25:00</div>
+                <button id="startBtn">開始</button>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="setting-group">
+                <label>集中<input type="number" id="workInput" value="25">分</label>
+                <label>休憩<input type="number" id="restInput" value="5">分</label>
+            </div>
+            <div class="button-group">
+                <button id="vrmUploadBtn">アバター変更</button>
+            </div>
+        </footer>
     </div>
 
-    <div class="controls">
-        <div class="setting-group">
-            <label>集中<input type="number" id="workInput" value="25">分</label>
-            <label>休憩<input type="number" id="restInput" value="5">分</label>
-        </div>
-        <button id="vrmUploadBtn">アバター変更</button>
-    </div>
     <input type="file" id="vrmInput" accept=".vrm" style="display: none;">
 
     <script type="importmap">
@@ -339,4 +388,3 @@
 </body>
 
 </html>
-
