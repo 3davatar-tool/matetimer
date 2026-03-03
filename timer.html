@@ -136,8 +136,14 @@ button:active { transform: scale(0.95); }
             if (file) loadVRM(URL.createObjectURL(file));
         };
 
-        // タイマー開始・停止ボタン
+// タイマー開始・停止ボタン
         document.getElementById('startBtn').onclick = () => {
+            // ★スマホ対策：ボタンを押した瞬間に一度だけ音を「空再生」して許可を得る
+            finishSound.play().then(() => {
+                finishSound.pause();
+                finishSound.currentTime = 0;
+            }).catch(e => console.log("Audio unlock failed"));
+
             if (timer) {
                 // 停止（キャンセル）
                 clearInterval(timer); 
@@ -146,7 +152,12 @@ button:active { transform: scale(0.95); }
                 if (animationAction) animationAction.stop();
             } else {
                 // 開始
-                document.getElementById('status').textContent = "集中";
+                const statusEl = document.getElementById('status');
+                // 「お疲れ様」から戻る時は「集中」にする
+                if (statusEl.textContent === "お疲れ様") {
+                    statusEl.textContent = "集中";
+                }
+
                 if (currentVrm && currentVrm.expressionManager) {
                     currentVrm.expressionManager.setValue('blink', 0.0);
                     currentVrm.expressionManager.update();
@@ -161,16 +172,28 @@ button:active { transform: scale(0.95); }
                     if (timeLeft <= 0) {
                         clearInterval(timer); 
                         timer = null;
-                        finishSound.play();
+                        finishSound.play(); // スマホでも鳴るようになります
+                        
+                        // 表情を固定（目を閉じる）
                         if (currentVrm && currentVrm.expressionManager) {
                             currentVrm.expressionManager.setValue('blink', 1.0);
                             currentVrm.expressionManager.update();
                         }
-                        document.getElementById('status').textContent = "お疲れ様";
-                        document.getElementById('startBtn').textContent = "開始";
                         if (animationAction) { animationAction.paused = true; }
                         if (currentVrm) { currentVrm.update(0); }
-                        timeLeft = 25 * 60; // 終了後に25分にリセット
+
+                        // --- 自動切り替えロジック ---
+                        if (statusEl.textContent === "集中") {
+                            statusEl.textContent = "休憩";
+                            timeLeft = 5 * 60; // 5分にセット
+                            // 3秒後に自動で休憩タイマーをスタート
+                            setTimeout(() => { document.getElementById('startBtn').click(); }, 3000);
+                        } else {
+                            statusEl.textContent = "集中";
+                            timeLeft = 25 * 60; // 25分にリセット
+                            // 休憩終了時は手動で再開を待つ（またはここもclick()にすれば無限ループ）
+                            document.getElementById('startBtn').textContent = "開始";
+                        }
                     }
                     const m = Math.floor(timeLeft / 60);
                     const s = timeLeft % 60;
@@ -211,3 +234,4 @@ button:active { transform: scale(0.95); }
     </script>
 </body>
 </html>
+
