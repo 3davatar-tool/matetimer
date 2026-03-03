@@ -6,11 +6,11 @@
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>mateTimer - v42 Giant Avatar</title>
+    <title>mateTimer - v43 Sound Master</title>
     <style>
         :root {
             --primary-color: #2b0080;
-            --bg-glass: rgba(255, 255, 255, 0.6); /* 少し透明度をアップ */
+            --bg-glass: rgba(255, 255, 255, 0.6);
             --safe-top: env(safe-area-inset-top, 20px);
             --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
@@ -35,7 +35,7 @@
             justify-content: center; align-items: center;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
             pointer-events: none;
-            backdrop-filter: blur(5px); /* ガラス感を出す */
+            backdrop-filter: blur(5px);
         }
 
         #progress-svg { position: absolute; top: 0; left: 0; width: 240px; height: 240px; transform: rotate(-90deg); }
@@ -121,9 +121,12 @@
         let timer = null, timeLeft = 25 * 60, totalTime = 25 * 60;
         let currentVrm = null, mixer = null, animationAction = null;
 
+        // ★サウンドの準備
+        const finishSound = new Audio('sounds/finish.mp3');
+        finishSound.load(); // 事前読み込み
+
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 20);
-        // カメラ初期位置をアバターの巨大化に合わせて調整
         camera.position.set(0, 1.8, 5.5); 
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -147,10 +150,7 @@
                 const gltf = await loader.loadAsync(url);
                 currentVrm = gltf.userData.vrm;
                 scene.add(currentVrm.scene);
-                
-                // ★アバターを1.5倍に巨大化★
                 currentVrm.scene.scale.set(1.5, 1.5, 1.5);
-                // タイマーより少し上に配置
                 currentVrm.scene.position.y = 0.8; 
                 currentVrm.scene.rotation.y = Math.PI;
 
@@ -192,6 +192,13 @@
 
         startBtn.onclick = (e) => {
             e.stopPropagation();
+            
+            // ★重要：iPhone対策！最初のクリックで音を「空再生」してロック解除
+            finishSound.play().then(() => {
+                finishSound.pause();
+                finishSound.currentTime = 0;
+            }).catch(error => console.log("Audio unlock failed:", error));
+
             if (timer) {
                 clearInterval(timer); timer = null;
                 startBtn.textContent = "開始";
@@ -201,6 +208,10 @@
                     timeLeft--;
                     if (timeLeft <= 0) {
                         clearInterval(timer); timer = null;
+                        
+                        // ★タイマー終了時に音を鳴らす
+                        finishSound.play();
+
                         statusDisplay.textContent = statusDisplay.textContent === "集中" ? "休憩" : "集中";
                         updateInitialTime();
                         startBtn.textContent = "開始";
