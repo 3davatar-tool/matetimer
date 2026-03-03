@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="manifest" href="manifest.json">
-    <title>mateTimer - Pro Version</title>
+    <title>mateTimer - Final Version</title>
 <style>
 body {
     margin: 0;
@@ -122,9 +122,9 @@ button:active { transform: scale(0.95); }
                     mixer = new THREE.AnimationMixer(currentVrm.scene);
                     const clip = createVRMAnimationClip(vrmaGltf.userData.vrmAnimations[0], currentVrm);
                     animationAction = mixer.clipAction(clip);
-                    if (timer) animationAction.play();
+                    animationAction.play(); // 初期状態から再生
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("VRM Load Error:", e); }
         }
 
         const finishSound = new Audio('sounds/finish.mp3');
@@ -212,10 +212,10 @@ button:active { transform: scale(0.95); }
             if (currentVrm) currentVrm.update(delta);
             renderer.render(scene, camera);
         }
+
+        // --- 初期アバター読み込み実行 ---
+        loadVRM('avatar/welcomecat.vrm');
         animate();
     </script>
 </body>
 </html>
-
-
-
