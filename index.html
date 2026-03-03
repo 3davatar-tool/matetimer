@@ -1,233 +1,103 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link rel="manifest" href="manifest.json">
-
-    <!-- iOS Specific Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="mateTimer">
-    <link rel="apple-touch-icon" href="icons/icon-192.png">
-
-    <title>mateTimer - v17 Flex Layout</title>
+    <title>mateTimer - v17 Fixed</title>
     <style>
         :root {
-            /* ダークパープル */
             --primary-color: #2b0080;
             --bg-glass: rgba(255, 255, 255, 0.7);
             --safe-top: env(safe-area-inset-top, 20px);
             --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
-
         body {
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             background-image: url('backimage/back_image.png');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            height: 100dvh;
-            /* 動的ビューポート高さ */
-            overflow: hidden;
-            font-family: "Helvetica Neue", Arial, Hiragino Sans, sans-serif;
+            background-size: cover; background-position: center;
+            height: 100dvh; overflow: hidden;
+            font-family: "Helvetica Neue", Arial, sans-serif;
             background-color: #000;
         }
-
-        /* 3D背景は最背面に固定 */
-        #canvas-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
-
-        /* メインのFlexラッパー */
+        #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        
         .layout-wrapper {
-            position: relative;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            height: 100dvh;
-            width: 100%;
-            box-sizing: border-box;
+            position: relative; z-index: 10;
+            display: flex; flex-direction: column;
+            height: 100dvh; width: 100%;
             padding-top: var(--safe-top);
             padding-bottom: var(--safe-bottom);
+            box-sizing: border-box;
         }
 
-        /* 上部エリア（ステータスなど） */
-        .header {
-            padding: 20px 0;
-            display: flex;
-            justify-content: center;
-        }
-
-        #status {
-            font-size: 1.8rem;
-            font-weight: 900;
-            color: #000;
-            background: rgba(255, 255, 255, 0.5);
-            padding: 5px 20px;
-            border-radius: 20px;
-            letter-spacing: 3px;
-        }
-
-        /* 中央エリア（タイマー） */
         .main-content {
-            flex: 1;
-            /* 残りのスペースをすべて使う */
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            flex: 1; display: flex; justify-content: center; align-items: center;
+            padding-bottom: 20px; /* アバターとの重なり調整 */
         }
 
         .container {
-            position: relative;
-            text-align: center;
-            width: 280px;
-            height: 280px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: var(--bg-glass);
-            border-radius: 50%;
+            position: relative; width: 280px; height: 280px;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            background: var(--bg-glass); border-radius: 50%;
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
             -webkit-tap-highlight-color: transparent;
         }
 
-        #progress-svg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 280px;
-            height: 280px;
-            transform: rotate(-90deg);
-        }
-
-        #progress-bg {
-            fill: none;
-            stroke: rgba(43, 0, 128, 0.1);
-            stroke-width: 8;
-        }
-
+        #progress-svg { position: absolute; top: 0; left: 0; width: 280px; height: 280px; transform: rotate(-90deg); }
+        #progress-bg { fill: none; stroke: rgba(43, 0, 128, 0.1); stroke-width: 8; }
         #progress-bar {
-            fill: none;
-            stroke: rgba(43, 0, 128, 0.6);
-            stroke-width: 8;
-            stroke-linecap: round;
-            stroke-dasharray: 816.8;
-            stroke-dashoffset: 0;
+            fill: none; stroke: rgba(43, 0, 128, 0.6); stroke-width: 8;
+            stroke-linecap: round; stroke-dasharray: 816.8; stroke-dashoffset: 0;
             transition: stroke-dashoffset 1s linear;
         }
 
-        #timer {
-            font-size: 4rem;
-            font-weight: bold;
-            margin: 5px 0;
-            color: #000;
-            z-index: 11;
-        }
-
-        /* 下部エリア（コントロール） */
-        .footer {
-            padding: 20px 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-        }
-
+        #status { font-size: 1.6rem; font-weight: 900; color: #000; letter-spacing: 3px; z-index: 11; margin-bottom: -5px; }
+        #timer { font-size: 4rem; font-weight: bold; color: #000; z-index: 11; margin: 5px 0; }
+        
+        .footer { padding: 10px 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
         .setting-group {
-            display: flex;
-            gap: 10px;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: bold;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex; gap: 10px; background: rgba(255, 255, 255, 0.8);
+            padding: 8px 15px; border-radius: 20px; font-weight: bold;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-
-        .setting-group input {
-            width: 40px;
-            height: 30px;
-            border: 1px solid var(--primary-color);
-            border-radius: 5px;
-            text-align: center;
-            font-weight: bold;
-            font-size: 1rem;
-        }
-
-        .button-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            align-items: center;
-        }
+        .setting-group input { width: 40px; height: 30px; border: 1px solid var(--primary-color); border-radius: 5px; text-align: center; font-size: 1rem; }
 
         button {
-            background: var(--primary-color);
-            color: #fff;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 30px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 1.1rem;
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
+            background: var(--primary-color); color: #fff; border: none;
+            padding: 12px 35px; border-radius: 30px; cursor: pointer;
+            font-weight: bold; font-size: 1.1rem; touch-action: manipulation;
             box-shadow: 0 4px 15px rgba(43, 0, 128, 0.3);
         }
-
-        button:active {
-            transform: scale(0.95);
-        }
-
-        #vrmUploadBtn {
-            padding: 8px 20px;
-            font-size: 0.9rem;
-            background: rgba(43, 0, 128, 0.8);
-        }
+        button:active { transform: scale(0.95); }
+        #vrmUploadBtn { padding: 8px 20px; font-size: 0.9rem; opacity: 0.9; }
     </style>
 </head>
-
 <body>
     <div id="canvas-container"></div>
-
     <div class="layout-wrapper">
-        <header class="header">
-            <div id="status">集中</div>
-        </header>
-
-        <main class="main-content">
+        <div class="main-content">
             <div class="container">
                 <svg id="progress-svg">
                     <circle id="progress-bg" cx="140" cy="140" r="130"></circle>
                     <circle id="progress-bar" cx="140" cy="140" r="130"></circle>
                 </svg>
+                <div id="status">集中</div>
                 <div id="timer">25:00</div>
                 <button id="startBtn">開始</button>
             </div>
-        </main>
-
+        </div>
         <footer class="footer">
             <div class="setting-group">
                 <label>集中<input type="number" id="workInput" value="25">分</label>
                 <label>休憩<input type="number" id="restInput" value="5">分</label>
             </div>
-            <div class="button-group">
-                <button id="vrmUploadBtn">アバター変更</button>
-            </div>
+            <button id="vrmUploadBtn">アバター変更</button>
         </footer>
     </div>
-
     <input type="file" id="vrmInput" accept=".vrm" style="display: none;">
 
     <script type="importmap">
@@ -248,16 +118,6 @@
         import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
         import { VRMLoaderPlugin } from '@pixiv/three-vrm';
         import { VRMAnimationLoaderPlugin, createVRMAnimationClip } from '@pixiv/three-vrm-animation';
-
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').then(reg => {
-                    console.log('SW registered!', reg);
-                }).catch(err => {
-                    console.log('SW registration failed: ', err);
-                });
-            });
-        }
 
         let timer = null, timeLeft = 25 * 60, totalTime = 25 * 60;
         let currentVrm = null, mixer = null, animationAction = null;
@@ -301,7 +161,6 @@
             const m = Math.floor(timeLeft / 60);
             const s = timeLeft % 60;
             document.getElementById('timer').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
-
             const progressBar = document.getElementById('progress-bar');
             const circumference = 2 * Math.PI * 130;
             const offset = circumference - (timeLeft / totalTime) * circumference;
@@ -328,11 +187,7 @@
         };
 
         document.getElementById('startBtn').onclick = () => {
-            finishSound.play().then(() => {
-                finishSound.pause();
-                finishSound.currentTime = 0;
-            }).catch(() => { });
-
+            finishSound.play().then(() => { finishSound.pause(); finishSound.currentTime = 0; }).catch(() => {});
             if (timer) {
                 clearInterval(timer); timer = null;
                 document.getElementById('startBtn').textContent = "開始";
@@ -347,12 +202,10 @@
                         finishSound.play();
                         const statusEl = document.getElementById('status');
                         if (statusEl.textContent === "集中") {
-                            statusEl.textContent = "休憩";
-                            updateInitialTime();
+                            statusEl.textContent = "休憩"; updateInitialTime();
                             setTimeout(() => { document.getElementById('startBtn').click(); }, 3000);
                         } else {
-                            statusEl.textContent = "集中";
-                            updateInitialTime();
+                            statusEl.textContent = "集中"; updateInitialTime();
                             document.getElementById('startBtn').textContent = "開始";
                         }
                     }
@@ -386,5 +239,5 @@
         animate();
     </script>
 </body>
-
 </html>
+
