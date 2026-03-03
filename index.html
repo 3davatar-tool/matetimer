@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="manifest" href="manifest.json">
-    <title>mateTimer - Final Version</title>
+    <title>mateTimer - Custom Version</title>
 <style>
 body {
     margin: 0;
@@ -27,8 +27,8 @@ body {
     padding: 20px; 
     border: 3px solid rgba(255, 255, 255, 0.8); 
     border-radius: 50%; 
-    width: 260px; 
-    height: 260px; 
+    width: 280px; 
+    height: 280px; 
     display: flex; 
     flex-direction: column; 
     justify-content: center; 
@@ -39,7 +39,7 @@ body {
 #timer { 
     font-size: 4rem; 
     font-weight: bold; 
-    margin: 5px 0; 
+    margin: 2px 0; 
     color: #000000; 
     font-family: 'Courier New', Courier, monospace; 
 }
@@ -48,10 +48,23 @@ body {
     font-weight: 900;  
     color: #000000;    
     letter-spacing: 3px; 
-    margin-bottom: 5px; 
+    margin-bottom: 2px; 
     font-family: sans-serif; 
 }
-button { background: #00f2ff; color: #000; border: none; padding: 12px 24px; border-radius: 30px; cursor: pointer; font-weight: bold; font-size: 1.1rem; transition: transform 0.1s; touch-action: manipulation; }
+.setting-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+.setting-group input {
+    width: 40px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    text-align: center;
+}
+button { background: #00f2ff; color: #000; border: none; padding: 10px 20px; border-radius: 30px; cursor: pointer; font-weight: bold; font-size: 1.1rem; transition: transform 0.1s; touch-action: manipulation; }
 button:active { transform: scale(0.95); }
 .controls { position: absolute; bottom: 30px; z-index: 20; display: flex; justify-content: center; width: 100%; }
 </style>
@@ -60,6 +73,12 @@ button:active { transform: scale(0.95); }
     <div id="canvas-container"></div>
     <div class="container">
         <div id="status">集中</div>
+        
+        <div class="setting-group">
+            <label>集中:<input type="number" id="workInput" value="25">分</label>
+            <label>休憩:<input type="number" id="restInput" value="5">分</label>
+        </div>
+
         <div id="timer">25:00</div>
         <button id="startBtn">開始</button>
     </div>
@@ -87,7 +106,11 @@ button:active { transform: scale(0.95); }
         import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
         import { VRMAnimationLoaderPlugin, createVRMAnimationClip } from '@pixiv/three-vrm-animation';
 
-        let timer = null, timeLeft = 25 * 60; 
+        let timer = null;
+        let workMinutes = 25;
+        let restMinutes = 5;
+        let timeLeft = workMinutes * 60; 
+        
         let currentVrm = null, mixer = null, animationAction = null;
         let blinkTimer = 0;
         let nextBlinkTime = 2 + Math.random() * 3;
@@ -122,13 +145,32 @@ button:active { transform: scale(0.95); }
                     mixer = new THREE.AnimationMixer(currentVrm.scene);
                     const clip = createVRMAnimationClip(vrmaGltf.userData.vrmAnimations[0], currentVrm);
                     animationAction = mixer.clipAction(clip);
-                    animationAction.play(); // 初期状態から再生
+                    animationAction.play();
                 }
-            } catch (e) { console.error("VRM Load Error:", e); }
+            } catch (e) { console.error(e); }
         }
 
         const finishSound = new Audio('sounds/finish.mp3');
         
+        // 入力値が変更されたらタイマーに即反映（停止中のみ）
+        const updateInitialTime = () => {
+            if (!timer) {
+                workMinutes = parseInt(document.getElementById('workInput').value) || 25;
+                restMinutes = parseInt(document.getElementById('restInput').value) || 5;
+                const status = document.getElementById('status').textContent;
+                timeLeft = (status === "休憩" ? restMinutes : workMinutes) * 60;
+                displayTime();
+            }
+        };
+        document.getElementById('workInput').onchange = updateInitialTime;
+        document.getElementById('restInput').onchange = updateInitialTime;
+
+        function displayTime() {
+            const m = Math.floor(timeLeft / 60);
+            const s = timeLeft % 60;
+            document.getElementById('timer').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
         document.getElementById('vrmUploadBtn').onclick = () => document.getElementById('vrmInput').click();
         document.getElementById('vrmInput').onchange = (e) => {
             const file = e.target.files[0];
@@ -149,6 +191,9 @@ button:active { transform: scale(0.95); }
             } else {
                 const statusEl = document.getElementById('status');
                 if (statusEl.textContent === "お疲れ様") statusEl.textContent = "集中";
+
+                workMinutes = parseInt(document.getElementById('workInput').value) || 25;
+                restMinutes = parseInt(document.getElementById('restInput').value) || 5;
 
                 if (currentVrm && currentVrm.expressionManager) {
                     currentVrm.expressionManager.setValue('blink', 0.0);
@@ -175,17 +220,15 @@ button:active { transform: scale(0.95); }
 
                         if (statusEl.textContent === "集中") {
                             statusEl.textContent = "休憩";
-                            timeLeft = 5 * 60; 
+                            timeLeft = restMinutes * 60; 
                             setTimeout(() => { document.getElementById('startBtn').click(); }, 3000);
                         } else {
                             statusEl.textContent = "集中";
-                            timeLeft = 25 * 60; 
+                            timeLeft = workMinutes * 60; 
                             document.getElementById('startBtn').textContent = "開始";
                         }
                     }
-                    const m = Math.floor(timeLeft / 60);
-                    const s = timeLeft % 60;
-                    document.getElementById('timer').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+                    displayTime();
                 }, 1000);
             }
         };
@@ -213,7 +256,6 @@ button:active { transform: scale(0.95); }
             renderer.render(scene, camera);
         }
 
-        // --- 初期アバター読み込み実行 ---
         loadVRM('avatar/welcomecat.vrm');
         animate();
     </script>
