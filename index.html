@@ -6,47 +6,43 @@
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>mateTimer - v21 Fixed</title>
+    <title>mateTimer - v22 Stable Reset</title>
     <style>
         :root {
             --primary-color: #2b0080;
             --bg-glass: rgba(255, 255, 255, 0.7);
+            --safe-top: env(safe-area-inset-top, 20px);
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; background-color: #000;
+        body {
+            margin: 0; padding: 0;
+            background-image: url('backimage/back_image.png');
+            background-size: cover; background-position: center;
+            background-repeat: no-repeat;
+            height: 100dvh; overflow: hidden;
             font-family: "Helvetica Neue", Arial, sans-serif;
+            background-color: #000;
         }
-
-        /* 3Dアバター：最背面 */
-        #canvas-container {
-            position: fixed; top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            z-index: 1; /* 一番後ろ */
-        }
-
-        /* UI全体：アバターの手前 */
-        .ui-screen {
-            position: relative;
-            z-index: 100; /* 確実に手前 */
-            width: 100%; height: 100dvh;
+        #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        
+        .layout-wrapper {
+            position: relative; z-index: 10;
             display: flex; flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-            padding: env(safe-area-inset-top, 20px) 0 calc(env(safe-area-inset-bottom, 20px) + 20px) 0;
+            justify-content: space-around;
+            height: 100dvh; width: 100%;
+            padding-top: var(--safe-top);
+            padding-bottom: var(--safe-bottom);
             box-sizing: border-box;
-            pointer-events: none; /* 透明部分はスルー */
+            text-align: center;
         }
 
-        /* タイマー部分 */
-        .timer-container {
+        .container {
             position: relative; width: 280px; height: 280px;
-            background: var(--bg-glass); border-radius: 50%;
+            margin: 0 auto;
             display: flex; flex-direction: column;
             justify-content: center; align-items: center;
+            background: var(--bg-glass); border-radius: 50%;
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-            pointer-events: auto; /* ここは触れる */
-            margin-top: 10vh;
         }
 
         #progress-svg { position: absolute; top: 0; left: 0; width: 280px; height: 280px; transform: rotate(-90deg); }
@@ -60,50 +56,42 @@
         #status { font-size: 1.6rem; font-weight: 900; color: #000; letter-spacing: 3px; z-index: 11; }
         #timer { font-size: 4rem; font-weight: bold; color: #000; z-index: 11; margin: 5px 0; }
         
-        /* 下部ボタンエリア */
-        .controls {
-            display: flex; flex-direction: column;
-            align-items: center; gap: 15px;
-            pointer-events: auto; /* ここは触れる */
-        }
-
+        .footer { display: flex; flex-direction: column; align-items: center; gap: 12px; }
         .setting-group {
             display: flex; gap: 10px; background: rgba(255, 255, 255, 0.8);
             padding: 8px 15px; border-radius: 20px; font-weight: bold;
         }
         .setting-group input { width: 40px; height: 30px; border: 1px solid var(--primary-color); border-radius: 5px; text-align: center; }
 
-        .btn {
+        button {
             background: var(--primary-color); color: #fff; border: none;
             padding: 12px 35px; border-radius: 30px; cursor: pointer;
-            font-weight: bold; font-size: 1.1rem;
+            font-weight: bold; font-size: 1.1rem; touch-action: manipulation;
             box-shadow: 0 4px 15px rgba(43, 0, 128, 0.3);
         }
+        #vrmUploadBtn { padding: 8px 20px; font-size: 0.9rem; }
     </style>
 </head>
 <body>
     <div id="canvas-container"></div>
-    
-    <div class="ui-screen">
-        <div class="timer-container">
+    <div class="layout-wrapper">
+        <div style="height: 10vh;"></div> <div class="container">
             <svg id="progress-svg">
                 <circle id="progress-bg" cx="140" cy="140" r="130"></circle>
                 <circle id="progress-bar" cx="140" cy="140" r="130"></circle>
             </svg>
             <div id="status">集中</div>
             <div id="timer">25:00</div>
-            <button id="startBtn" class="btn">開始</button>
+            <button id="startBtn">開始</button>
         </div>
-
-        <div class="controls">
+        <footer class="footer">
             <div class="setting-group">
                 <label>集中<input type="number" id="workInput" value="25">分</label>
                 <label>休憩<input type="number" id="restInput" value="5">分</label>
             </div>
-            <button id="vrmUploadBtn" class="btn">アバター変更</button>
-        </div>
+            <button id="vrmUploadBtn">アバター変更</button>
+        </footer>
     </div>
-
     <input type="file" id="vrmInput" accept=".vrm" style="display: none;">
 
     <script type="importmap">
@@ -129,6 +117,8 @@
         const timerDisplay = document.getElementById('timer');
         const statusDisplay = document.getElementById('status');
         const progressBar = document.getElementById('progress-bar');
+        const workInput = document.getElementById('workInput');
+        const restInput = document.getElementById('restInput');
 
         let timer = null, timeLeft = 25 * 60, totalTime = 25 * 60;
         let currentVrm = null, mixer = null, animationAction = null;
@@ -138,7 +128,6 @@
         camera.position.set(0, 1.3, 3.5);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
         document.getElementById('canvas-container').appendChild(renderer.domElement);
         
         const controls = new OrbitControls(camera, renderer.domElement);
@@ -146,7 +135,6 @@
         controls.update();
 
         scene.add(new THREE.DirectionalLight(0xffffff, 1.0), new THREE.AmbientLight(0xffffff, 0.4));
-
         const loader = new GLTFLoader();
         loader.register((p) => new VRMLoaderPlugin(p));
         loader.register((p) => new VRMAnimationLoaderPlugin(p));
@@ -158,8 +146,7 @@
                 currentVrm = gltf.userData.vrm;
                 scene.add(currentVrm.scene);
                 currentVrm.scene.rotation.y = Math.PI;
-                const randomNum = Math.floor(Math.random() * 7) + 1;
-                const vrmaGltf = await loader.loadAsync(`motions/VRMA_0${randomNum}.vrma`).catch(() => null);
+                const vrmaGltf = await loader.loadAsync(`motions/VRMA_01.vrma`).catch(() => null);
                 if (vrmaGltf) {
                     mixer = new THREE.AnimationMixer(currentVrm.scene);
                     const clip = createVRMAnimationClip(vrmaGltf.userData.vrmAnimations[0], currentVrm);
@@ -185,20 +172,17 @@
             if (timer) {
                 clearInterval(timer); timer = null;
                 startBtn.textContent = "開始";
-                if (animationAction) animationAction.stop();
             } else {
                 startBtn.textContent = "停止";
-                if (animationAction) { animationAction.paused = false; animationAction.play(); }
                 timer = setInterval(() => {
                     timeLeft--;
                     if (timeLeft <= 0) {
                         clearInterval(timer); timer = null;
                         finishSound.play();
                         statusDisplay.textContent = statusDisplay.textContent === "集中" ? "休憩" : "集中";
-                        timeLeft = (statusDisplay.textContent === "休憩" ? parseInt(document.getElementById('restInput').value) : parseInt(document.getElementById('workInput').value)) * 60;
+                        timeLeft = (statusDisplay.textContent === "休憩" ? parseInt(restInput.value) : parseInt(workInput.value)) * 60;
                         totalTime = timeLeft;
-                        if (statusDisplay.textContent === "休憩") setTimeout(() => startBtn.click(), 3000);
-                        else startBtn.textContent = "開始";
+                        startBtn.textContent = "開始";
                     }
                     displayTime();
                 }, 1000);
@@ -214,10 +198,9 @@
         loadVRM('avatar/welcomecat.vrm');
         displayTime();
         
-        const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
-            const delta = clock.getDelta();
+            const delta = new THREE.Clock().getDelta();
             if (mixer) mixer.update(delta);
             if (currentVrm) currentVrm.update(delta);
             renderer.render(scene, camera);
@@ -226,6 +209,3 @@
     </script>
 </body>
 </html>
-
-
-
