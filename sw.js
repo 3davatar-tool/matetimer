@@ -1,4 +1,4 @@
-const CACHE_NAME = 'matetimer-v18';
+const CACHE_NAME = 'matetimer-v19';
 const ASSETS = [
     './',
     './index.html',
