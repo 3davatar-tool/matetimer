@@ -1,101 +1,147 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="manifest" href="manifest.json">
-    <title>mateTimer - Final Custom Version</title>
-<style>
-/* フォントをゴシック体で統一 */
-body {
-    margin: 0;
-    background-image: url('backimage/back_image.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    overflow: hidden;
-    font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
-}
-#canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+    <title>mateTimer - v14 Progress Fixed</title>
+    <style>
+        body {
+            margin: 0;
+            background-image: url('backimage/back_image.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+        }
 
-/* 中央のタイマー表示エリア */
-.container { 
-    position: relative; 
-    z-index: 10; 
-    text-align: center; 
-    padding: 20px; 
-    border: 3px solid rgba(255, 255, 255, 0.8); 
-    border-radius: 50%; 
-    width: 260px; 
-    height: 260px; 
-    display: flex; 
-    flex-direction: column; 
-    justify-content: center; 
-    align-items: center; 
-    background: rgba(255, 255, 255, 0.6); 
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3); 
-}
-#timer { font-size: 4rem; font-weight: bold; margin: 5px 0; color: #000000; }
-#status { font-size: 1.8rem; font-weight: 900; color: #000000; letter-spacing: 3px; margin-bottom: 5px; }
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
 
-/* 下部の設定・操作エリア */
-.controls { 
-    position: absolute; 
-    bottom: 20px; 
-    z-index: 20; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    gap: 10px; 
-    width: 100%; 
-}
+        .container {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            width: 280px;
+            height: 280px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
 
-/* 集中/休憩の設定入力欄 */
-.setting-group {
-    display: flex;
-    gap: 15px;
-    background: rgba(255, 255, 255, 0.6);
-    padding: 8px 15px;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    font-weight: bold;
-    color: #000;
-}
-.setting-group input {
-    width: 40px;
-    border-radius: 5px;
-    /* 枠線をダークパープルに設定 */
-    border: 1px solid #2b0080;
-    text-align: center;
-    background: white;
-    font-weight: bold;
-    margin: 0 3px;
-}
+        /* プログレスバーのSVG設定 */
+        #progress-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 280px;
+            transform: rotate(-90deg);
+            /* 12時から開始させる */
+        }
 
-/* ボタン共通設定（ダークパープル背景・白文字） */
-button { 
-    background: #2b0080; 
-    color: #ffffff; 
-    border: none; 
-    padding: 12px 24px; 
-    border-radius: 30px; 
-    cursor: pointer; 
-    font-weight: bold; 
-    font-size: 1.1rem; 
-    transition: transform 0.1s; 
-    touch-action: manipulation; 
-}
-button:active { transform: scale(0.95); }
-</style>
+        #progress-bg {
+            fill: none;
+            stroke: rgba(43, 0, 128, 0.1);
+            stroke-width: 8;
+        }
+
+        #progress-bar {
+            fill: none;
+            stroke: rgba(43, 0, 128, 0.6);
+            /* 半透明のダークパープル */
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-dasharray: 816.8;
+            /* 2 * PI * r (r=130) */
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 1s linear;
+        }
+
+        #timer {
+            font-size: 4rem;
+            font-weight: bold;
+            margin: 5px 0;
+            color: #000;
+            z-index: 11;
+        }
+
+        #status {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #000;
+            letter-spacing: 3px;
+            margin-bottom: 5px;
+            z-index: 11;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .setting-group {
+            display: flex;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .setting-group input {
+            width: 35px;
+            border: 1px solid #2b0080;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        button {
+            background: #2b0080;
+            color: #fff;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1rem;
+            z-index: 11;
+        }
+    </style>
 </head>
+
 <body>
     <div id="canvas-container"></div>
     <div class="container">
+        <svg id="progress-svg">
+            <circle id="progress-bg" cx="140" cy="140" r="130"></circle>
+            <circle id="progress-bar" cx="140" cy="140" r="130"></circle>
+        </svg>
         <div id="status">集中</div>
         <div id="timer">25:00</div>
         <button id="startBtn">開始</button>
@@ -108,7 +154,6 @@ button:active { transform: scale(0.95); }
         </div>
         <button id="vrmUploadBtn">アバター変更</button>
     </div>
-
     <input type="file" id="vrmInput" accept=".vrm" style="display: none;">
 
     <script type="importmap">
@@ -130,20 +175,16 @@ button:active { transform: scale(0.95); }
         import { VRMLoaderPlugin } from '@pixiv/three-vrm';
         import { VRMAnimationLoaderPlugin, createVRMAnimationClip } from '@pixiv/three-vrm-animation';
 
-        // タイマー制御用の変数
-        let timer = null;
-        let timeLeft = 25 * 60;
+        let timer = null, timeLeft = 25 * 60, totalTime = 25 * 60;
         let currentVrm = null, mixer = null, animationAction = null;
         let blinkTimer = 0, nextBlinkTime = 2 + Math.random() * 3;
 
-        // 3Dシーンのセットアップ
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(30, window.innerWidth/window.innerHeight, 0.1, 20);
+        const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 20);
         camera.position.set(0, 1.3, 3.5);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.getElementById('canvas-container').appendChild(renderer.domElement);
-        
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.target.set(0, 1.3, 0);
         scene.add(new THREE.DirectionalLight(0xffffff, 1.0), new THREE.AmbientLight(0xffffff, 0.4));
@@ -152,7 +193,6 @@ button:active { transform: scale(0.95); }
         loader.register((p) => new VRMLoaderPlugin(p));
         loader.register((p) => new VRMAnimationLoaderPlugin(p));
 
-        // VRMモデルを読み込む関数
         async function loadVRM(url) {
             try {
                 if (currentVrm) scene.remove(currentVrm.scene);
@@ -160,8 +200,6 @@ button:active { transform: scale(0.95); }
                 currentVrm = gltf.userData.vrm;
                 scene.add(currentVrm.scene);
                 currentVrm.scene.rotation.y = Math.PI;
-
-                // ランダムにモーションを選択して再生
                 const randomNum = Math.floor(Math.random() * 7) + 1;
                 const vrmaGltf = await loader.loadAsync(`motions/VRMA_0${randomNum}.vrma`).catch(() => null);
                 if (vrmaGltf) {
@@ -170,68 +208,64 @@ button:active { transform: scale(0.95); }
                     animationAction = mixer.clipAction(clip);
                     animationAction.play();
                 }
-            } catch (e) { console.error("アバター読み込みエラー:", e); }
+            } catch (e) { console.error(e); }
         }
 
         const finishSound = new Audio('sounds/finish.mp3');
 
-        // 残り時間を画面に反映させる関数
         function displayTime() {
             const m = Math.floor(timeLeft / 60);
             const s = timeLeft % 60;
             document.getElementById('timer').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+
+            // プログレスバーの更新
+            const progressBar = document.getElementById('progress-bar');
+            const circumference = 2 * Math.PI * 130;
+            const offset = circumference - (timeLeft / totalTime) * circumference;
+            progressBar.style.strokeDashoffset = offset;
         }
 
-        // 入力フォームの値が変更された時にタイマー表示を更新
         const updateInitialTime = () => {
             if (!timer) {
                 const workMin = parseInt(document.getElementById('workInput').value) || 25;
                 const restMin = parseInt(document.getElementById('restInput').value) || 5;
-                timeLeft = (document.getElementById('status').textContent === "休憩" ? restMin : workMin) * 60;
+                const isRest = document.getElementById('status').textContent === "休憩";
+                totalTime = (isRest ? restMin : workMin) * 60;
+                timeLeft = totalTime;
                 displayTime();
             }
         };
 
-        document.getElementById('workInput').addEventListener('input', updateInitialTime);
-        document.getElementById('restInput').addEventListener('input', updateInitialTime);
+        document.getElementById('workInput').oninput = updateInitialTime;
+        document.getElementById('restInput').oninput = updateInitialTime;
         document.getElementById('vrmUploadBtn').onclick = () => document.getElementById('vrmInput').click();
         document.getElementById('vrmInput').onchange = (e) => {
             const file = e.target.files[0];
             if (file) loadVRM(URL.createObjectURL(file));
         };
 
-        // 開始ボタンクリック時の動作
         document.getElementById('startBtn').onclick = () => {
-            // ★スマホ対策：ボタンクリック時に音をアンロック
-            finishSound.play().then(() => { finishSound.pause(); finishSound.currentTime = 0; }).catch(() => {});
-
+            finishSound.play().then(() => { finishSound.pause(); finishSound.currentTime = 0; }).catch(() => { });
             if (timer) {
-                // 停止（キャンセル）処理
                 clearInterval(timer); timer = null;
                 document.getElementById('startBtn').textContent = "開始";
                 if (animationAction) animationAction.stop();
             } else {
-                // 開始処理
-                const statusEl = document.getElementById('status');
-                if (statusEl.textContent === "お疲れ様") statusEl.textContent = "集中";
                 document.getElementById('startBtn').textContent = "停止";
                 if (animationAction) { animationAction.paused = false; animationAction.play(); }
-                
                 timer = setInterval(() => {
                     timeLeft--;
                     if (timeLeft <= 0) {
-                        // タイマー終了時の自動切り替えロジック
                         clearInterval(timer); timer = null;
-                        finishSound.play(); // スマホでも鳴る
-
+                        finishSound.play();
+                        const statusEl = document.getElementById('status');
                         if (statusEl.textContent === "集中") {
                             statusEl.textContent = "休憩";
-                            timeLeft = (parseInt(document.getElementById('restInput').value) || 5) * 60;
-                            // 3秒後に自動で休憩タイマーを開始
+                            updateInitialTime();
                             setTimeout(() => { document.getElementById('startBtn').click(); }, 3000);
                         } else {
                             statusEl.textContent = "集中";
-                            timeLeft = (parseInt(document.getElementById('workInput').value) || 25) * 60;
+                            updateInitialTime();
                             document.getElementById('startBtn').textContent = "開始";
                         }
                     }
@@ -245,17 +279,13 @@ button:active { transform: scale(0.95); }
             requestAnimationFrame(animate);
             const delta = clock.getDelta();
             if (mixer) mixer.update(delta);
-            
-            // まばたき制御（「集中」中のみ実行）
-            if (currentVrm && currentVrm.expressionManager) {
-                if (document.getElementById('status').textContent === "集中") {
-                    blinkTimer += delta;
-                    if (blinkTimer >= nextBlinkTime) {
-                        currentVrm.expressionManager.setValue('blink', 1.0);
-                        if (blinkTimer >= nextBlinkTime + 0.1) {
-                            currentVrm.expressionManager.setValue('blink', 0.0);
-                            blinkTimer = 0; nextBlinkTime = 2 + Math.random() * 3;
-                        }
+            if (currentVrm && currentVrm.expressionManager && document.getElementById('status').textContent === "集中") {
+                blinkTimer += delta;
+                if (blinkTimer >= nextBlinkTime) {
+                    currentVrm.expressionManager.setValue('blink', 1.0);
+                    if (blinkTimer >= nextBlinkTime + 0.1) {
+                        currentVrm.expressionManager.setValue('blink', 0.0);
+                        blinkTimer = 0; nextBlinkTime = 2 + Math.random() * 3;
                     }
                 }
                 currentVrm.expressionManager.update();
@@ -264,9 +294,10 @@ button:active { transform: scale(0.95); }
             renderer.render(scene, camera);
         }
 
-        // 初期実行：デフォルトアバター読み込みとアニメーション開始
         loadVRM('avatar/welcomecat.vrm');
+        updateInitialTime();
         animate();
     </script>
 </body>
+
 </html>
