@@ -6,7 +6,7 @@
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>mateTimer - v32 Final Fix</title>
+    <title>mateTimer - v35 Stable Master</title>
     <style>
         :root {
             --primary-color: #2b0080;
@@ -14,41 +14,38 @@
         }
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; background-color: #000;
+            overflow: hidden;
+            /* 背景画像をここに集約 */
+            background-image: url('backimage/back_image.png');
+            background-size: cover;
+            background-position: center;
+            background-color: #000;
             font-family: "Helvetica Neue", Arial, sans-serif;
         }
 
-        /* 背景画像：最背面 */
-        .bg-img {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url('backimage/back_image.png');
-            background-size: cover; background-position: center;
-            z-index: 0;
-        }
-
-        /* 3D背景：背景画像の上 */
+        /* アバターを表示するキャンバス：背景とUIの間 */
         #canvas-container {
             position: fixed; top: 0; left: 0;
             width: 100%; height: 100%; z-index: 1;
         }
 
-        /* UIラッパー：透明部分はアバター操作を透過 */
+        /* UI全体の親：透明部分はスルー */
         .ui-wrapper {
             position: relative; z-index: 100;
             width: 100%; height: 100dvh;
             pointer-events: none;
         }
 
-        /* タイマーUI：画面下側に配置 */
+        /* タイマー：画面中央より下(62%)に配置 */
         .timer-ui {
-            position: absolute; top: 65%; left: 50%;
+            position: absolute; top: 62%; left: 50%;
             transform: translate(-50%, -50%);
             width: 260px; height: 260px;
             background: var(--bg-glass); border-radius: 50%;
             display: flex; flex-direction: column;
             justify-content: center; align-items: center;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
-            pointer-events: none;
+            pointer-events: none; /* 中のボタン以外はスルー */
         }
 
         #progress-svg { position: absolute; top: 0; left: 0; width: 260px; height: 260px; transform: rotate(-90deg); }
@@ -56,7 +53,7 @@
         #progress-bar {
             fill: none; stroke: rgba(43, 0, 128, 0.6); stroke-width: 8;
             stroke-linecap: round;
-            stroke-dasharray: 753.98; /* 2 * PI * 120 */
+            stroke-dasharray: 753.98;
             stroke-dashoffset: 0;
             transition: stroke-dashoffset 1s linear;
         }
@@ -86,13 +83,12 @@
             padding: 12px 35px; border-radius: 30px; cursor: pointer;
             font-weight: bold; font-size: 1.1rem;
             box-shadow: 0 4px 15px rgba(43, 0, 128, 0.3);
-            pointer-events: auto;
-            position: relative; z-index: 110;
+            pointer-events: auto; /* 確実に触れる */
+            position: relative; z-index: 200;
         }
     </style>
 </head>
 <body>
-    <div class="bg-img"></div>
     <div id="canvas-container"></div>
     
     <div class="ui-wrapper">
@@ -146,15 +142,16 @@
 
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 20);
-        camera.position.set(0, 1.4, 4.0);
+        // アバターを画面の上半分へ
+        camera.position.set(0, 1.8, 4.0); 
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); // alpha: trueで背景透過
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
         document.getElementById('canvas-container').appendChild(renderer.domElement);
         
         const controls = new OrbitControls(camera, renderer.domElement);
-        controls.target.set(0, 1.2, 0); 
+        controls.target.set(0, 1.3, 0); 
         controls.enableDamping = true;
         controls.update();
 
